@@ -203,13 +203,19 @@ function pzApplyUci(uciStr) {
   });
   if (mv) {
     board.position(g.fen());
-    drawArrow(mv.from, mv.to, 'last');
+    pzDrawLastMove(mv);
   }
   return mv;
 }
 
-function pzCorrectMove(mv) {
+// Sirf LAST move ka arrow dikhe — purane arrows pehle clear karo
+function pzDrawLastMove(mv) {
+  clearArrows();
   drawArrow(mv.from, mv.to, 'last');
+}
+
+function pzCorrectMove(mv) {
+  pzDrawLastMove(mv);
   pzState.solIdx++;
 
   if (pzState.solIdx >= pzState.puzzle.solution.length) {
