@@ -82,7 +82,12 @@ def add_review_history():
     }
 
     history = load_review_history()
-    # Avoid back-to-back duplicate saves
+    # Avoid back-to-back duplicate saves — but preserve original saved_at & id
+    existing = next((g for g in history
+                      if g.get("pgn") == entry["pgn"] and g.get("move_count") == entry["move_count"]), None)
+    if existing:
+        entry["saved_at"] = existing.get("saved_at", entry["saved_at"])
+        entry["id"]       = existing.get("id", entry["id"])
     history = [g for g in history
                if not (g.get("pgn") == entry["pgn"] and g.get("move_count") == entry["move_count"])]
 
