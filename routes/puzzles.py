@@ -42,13 +42,53 @@ LICHESS_API = "https://lichess.org/api/puzzle"
 
 # ── Persistence ───────────────────────────────────────────────────────────────
 
+def _default_stats():
+    return {
+        "total_solved": 0, "total_failed": 0, "total_time_ms": 0,
+        "total_points": 0,
+        # daily: { "YYYY-MM-DD": { "points": int, "solved": int } }
+        "daily": {},
+        # best_day: { "date": "YYYY-MM-DD", "points": int } — derived
+        "best_day": None,
+    }
+
+
 def load_puzzles():
     data = load_json_file(PUZZLES_FILE)
     if isinstance(data, dict) and isinstance(data.get("puzzles"), list):
+        stats = data.setdefault("stats", _default_stats())
+        for k, v in _default_stats().items():
+            stats.setdefault(k, v)
         return data
-    return {"puzzles": [], "stats": {"total_solved": 0, "total_failed": 0,
-                                     "current_streak": 0, "best_streak": 0,
-                                     "total_time_ms": 0}}
+    return {"puzzles": [], "stats": _default_stats()}
+
+
+def _today_str():
+    import datetime
+    return datetime.date.today().isoformat()   # YYYY-MM-DD (device local time)
+
+
+def calc_points(time_ms, mistakes):
+    """
+    First-time solve scoring:
+      base 5  → -2 if time >= 2 min  → -2 per wrong attempt, floor at 0.
+    """
+    pts = 5
+    if time_ms >= 120_000:
+        pts -= 2
+    pts -= mistakes * 2
+    return max(0, pts)
+
+
+def _compute_best_day(stats):
+    daily = stats.get("daily") or {}
+    best_date, best_pts = None, -1
+    for d, info in daily.items():
+        pts = int(info.get("points") or 0)
+        if pts > best_pts:
+            best_pts, best_date = pts, d
+    stats["best_day"] = ({"date": best_date, "points": best_pts}
+                         if best_date else None)
 
 
 def save_puzzles(data):
@@ -73,6 +113,7 @@ def make_record(pz_id, fen, solution, rating=0, themes=""):
         "attempts":     0,
         "mistakes":     None,
         "best_time_ms": None,
+        "points_earned": 0,      # first-solve points; re-solve/give-up = 0
         "added_at":     int(time.time()),
     }
 
@@ -114,7 +155,11 @@ def clear_or_delete_puzzles():
 def record_result():
     """
     Body: { id, solved: bool, time_ms: int, mistakes: int }
-    Updates per-puzzle record and global streak/time stats.
+
+    Points (sirf FIRST solve par):
+      max 5  → -2 agar time >= 2 min → -2 per galat attempt, min 0.
+    Re-solve / give up = 0 points.
+    Daily tracking replaces streak: har date ke points jude rehte hain.
     """
     body    = request.get_json(silent=True)
     if not body:
@@ -136,33 +181,52 @@ def record_result():
     if puzzle is None:
         return jsonify({"error": "Puzzle not found"}), 404
 
-    stats = data["stats"]
-    puzzle["attempts"] = int(puzzle.get("attempts") or 0) + 1
+    stats      = data["stats"]
     first_solve = solved and puzzle.get("solved") is not True
+    earned     = 0
+
+    puzzle["attempts"] = int(puzzle.get("attempts") or 0) + 1
 
     if solved:
-        puzzle["solved"] = True
-        puzzle["mistakes"] = mistakes
-        if puzzle.get("best_time_ms") is None or time_ms < puzzle["best_time_ms"]:
-            puzzle["best_time_ms"] = time_ms
-        stats["current_streak"] = int(stats.get("current_streak") or 0) + 1
-        stats["best_streak"] = max(int(stats.get("best_streak") or 0),
-                                   stats["current_streak"])
-        # Count each puzzle once toward total_solved
+        # Points sirf pehli baar solve karne par
         if first_solve:
+            earned = calc_points(time_ms, mistakes)
+            puzzle["points_earned"] = earned
+            puzzle["mistakes"] = mistakes
+            if puzzle.get("best_time_ms") is None or time_ms < puzzle["best_time_ms"]:
+                puzzle["best_time_ms"] = time_ms
+
+            stats["total_points"] = int(stats.get("total_points") or 0) + earned
+            today = _today_str()
+            daily = stats.setdefault("daily", {})
+            day   = daily.setdefault(today, {"points": 0, "solved": 0})
+            day["points"] = int(day.get("points") or 0) + earned
+            day["solved"] = int(day.get("solved") or 0) + 1
+            _compute_best_day(stats)
+
             stats["total_solved"] = int(stats.get("total_solved") or 0) + 1
             stats["total_time_ms"] = int(stats.get("total_time_ms") or 0) + time_ms
+        puzzle["solved"] = True
     else:
-        puzzle["solved"] = False
-        stats["current_streak"] = 0
+        # Fail/give-up — 0 points, streak ka concept nahi hai ab
+        if puzzle.get("solved") is not True:
+            puzzle["solved"] = False
         stats["total_failed"] = int(stats.get("total_failed") or 0) + 1
 
     save_puzzles(data)
 
+    today = _today_str()
     return jsonify({
         "ok":   True,
+        "earned": earned,
+        "today": {
+            "date":   today,
+            "points": int((stats.get("daily") or {}).get(today, {}).get("points") or 0),
+            "solved": int((stats.get("daily") or {}).get(today, {}).get("solved") or 0),
+        },
         "puzzle": {k: puzzle[k] for k in ("id", "solved", "attempts",
-                                          "best_time_ms", "mistakes")},
+                                          "best_time_ms", "mistakes",
+                                          "points_earned")},
         "stats": stats,
     })
 

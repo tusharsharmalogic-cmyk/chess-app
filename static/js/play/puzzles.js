@@ -1,8 +1,10 @@
 // ============================================================
-// puzzles.js — Tactics Puzzle Mode (same board, timer, streak)
+// puzzles.js — Tactics Puzzle Mode (same board, points system)
 //   - Lichess se fetch / CSV DB import
 //   - Solve on the main board via tap-to-move
-//   - Per-puzzle ✅ ticks, solve time, global streak stats
+//   - Points: max 5 → -2 slow(2min+) → -2/galat attempt, min 0
+//   - Sirf first solve par points; re-solve/give-up = 0
+//   - Daily tracking + Best Day stats
 // ============================================================
 
 let pzState = {
@@ -21,6 +23,7 @@ let pzSelSquare = null;
 let pzLegalSquares = [];
 let pzList = [];
 let pzPausedAt = null;   // tab switch par timer pause timestamp
+let pzLastEarned = null; // last /result response ka earned points
 
 // ── HUD ────────────────────────────────────────────────────────
 
@@ -264,8 +267,9 @@ function pzCorrectMove(mv) {
 
 async function pzRecordResult(solved) {
   const timeMs = pzElapsedMs();
+  pzLastEarned = null;
   try {
-    await fetch(`${FLASK_URL}/puzzles/result`, {
+    const res = await fetch(`${FLASK_URL}/puzzles/result`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -275,6 +279,8 @@ async function pzRecordResult(solved) {
         mistakes: pzState.mistakes,
       }),
     });
+    const data = await res.json();
+    if (typeof data.earned === 'number') pzLastEarned = data.earned;
   } catch (e) { /* offline — stats local skip */ }
   return timeMs;
 }
@@ -282,17 +288,23 @@ async function pzRecordResult(solved) {
 async function pzFinish(solved) {
   pzState.done = true;
   pzStopTimer();
-  // Result backend me save karo — isse tick ✅, streak 🔥 aur stats update hote hain
+  // Result backend me save karo — points/ticks/stats update hote hain
   const timeMs = await pzRecordResult(solved);
 
   const btnNext = document.getElementById('pz-btn-next');
   if (solved) {
-    const clean = pzState.mistakes === 0;
-    pzHudMsg(`✅ Solved in ${pzFmtMs(timeMs)}${clean ? ' — Flawless! 🎯' : ''}`, '#61bd4f');
-    document.getElementById('pz-hud-sub').textContent =
-      `Streak badh gaya 🔥 • Mistakes: ${pzState.mistakes}`;
+    const earned = pzLastEarned ?? 0;
+    if (earned > 0) {
+      pzHudMsg(`✅ Solved in ${pzFmtMs(timeMs)} — +${earned} points 🎯`, '#61bd4f');
+      document.getElementById('pz-hud-sub').textContent =
+        `Points mile! Mistakes: ${pzState.mistakes}`;
+    } else {
+      pzHudMsg(`✅ Solved in ${pzFmtMs(timeMs)} — +0 points`, '#61bd4f');
+      document.getElementById('pz-hud-sub').textContent =
+        `Pehli baar solve par hi points milte hain • Mistakes: ${pzState.mistakes}`;
+    }
   } else {
-    pzHudMsg('❌ Puzzle fail — streak reset. Solution dekho:', '#d46060');
+    pzHudMsg('❌ Puzzle fail — +0 points. Solution dekho:', '#d46060');
     // Reveal remaining solution moves one by one
     let i = pzState.solIdx;
     const reveal = () => {
@@ -359,9 +371,18 @@ async function pzRefreshUI() {
     pzList = data.puzzles || [];
     const st = data.stats || {};
 
-    document.getElementById('pz-stat-solved').textContent = st.total_solved ?? 0;
-    document.getElementById('pz-stat-streak').textContent = st.current_streak ?? 0;
-    document.getElementById('pz-stat-best').textContent   = st.best_streak ?? 0;
+    document.getElementById('pz-stat-points').textContent = st.total_points ?? 0;
+
+    const todayEl = document.getElementById('pz-stat-today');
+    if (todayEl) {
+      todayEl.textContent = st.today?.points ?? 0;
+    }
+    const bdEl = document.getElementById('pz-stat-bestday');
+    if (bdEl) {
+      bdEl.textContent = st.best_day?.points ?? 0;
+      const dateLbl = document.getElementById('pz-stat-bestday-date');
+      if (dateLbl && st.best_day?.date) dateLbl.textContent = st.best_day.date;
+    }
 
     const avgEl = document.getElementById('pz-stat-avg');
     if ((st.total_solved ?? 0) > 0 && (st.total_time_ms ?? 0) > 0) {
@@ -381,6 +402,9 @@ async function pzRefreshUI() {
     body.innerHTML = pzList.map(p => {
       const tick = p.solved === true ? '✅'
                  : p.solved === false ? '❌' : '⬜';
+      const ptsBadge = (p.solved === true)
+        ? `<span style="font-size:10px;font-weight:700;color:${(p.points_earned??0)>0?'var(--accent2)':'var(--text3)'};white-space:nowrap">+${p.points_earned??0} pts</span>`
+        : '';
       const meta = [
         p.rating ? `⭐ ${p.rating}` : '',
         p.best_time_ms ? `⏱ ${pzFmtMs(p.best_time_ms)}` : '',
@@ -391,6 +415,7 @@ async function pzRefreshUI() {
         <span style="flex:1;min-width:0">
           <span style="font-size:11px;font-weight:600;color:var(--text)">${escHtml(meta)}</span>
         </span>
+        ${ptsBadge}
         <button class="btn sm" title="Copy FEN" onclick='pzCopyFen("${p.id}")'>📋 FEN</button>
         <button class="btn primary sm" onclick='startPuzzleById("${p.id}")'>▶ Solve</button>
       </div>`;
