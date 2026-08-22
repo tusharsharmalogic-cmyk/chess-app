@@ -86,7 +86,14 @@
       document.body.classList.remove('review-board-hidden');
       document.getElementById('analysis-top-row').classList.remove('show');
       document.getElementById('analysis-bottom-row').classList.remove('show');
-      board.position(playGame.fen());
+      // Puzzle session active hai to puzzle ki position wapas lao,
+      // warna normal play game ki position dikhao
+      if (typeof pzState !== 'undefined' && pzState && pzState.active) {
+        board.position(pzState.game.fen());
+        if (typeof pzOnPlayTabReturn === 'function') pzOnPlayTabReturn();
+      } else {
+        board.position(playGame.fen());
+      }
       onPlayTabOpen();
       if (playState.active) document.getElementById('copy-pgn-btn').classList.add('show');
       updatePlayBoardVisibility();
@@ -150,6 +157,8 @@
     }
 
     _currentTab = name;
+    // Puzzle HUD pause/show handle karo jab bhi tab switch ho
+    if (typeof pzOnTabSwitch === 'function') pzOnTabSwitch(name);
     // Update move card visibility when switching tabs
     _renderMoveCards();
   }

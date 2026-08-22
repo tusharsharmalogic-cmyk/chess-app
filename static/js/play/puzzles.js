@@ -20,6 +20,7 @@ let pzState = {
 let pzSelSquare = null;
 let pzLegalSquares = [];
 let pzList = [];
+let pzPausedAt = null;   // tab switch par timer pause timestamp
 
 // ── HUD ────────────────────────────────────────────────────────
 
@@ -54,12 +55,33 @@ function pzFmtMs(ms) {
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }
 
+function pzElapsedMs() {
+  let e = Date.now() - pzState.startTime;
+  if (pzPausedAt) e -= (Date.now() - pzPausedAt);
+  return Math.max(0, e);
+}
+
 function pzStartTimer() {
   pzStopTimer();
   pzState.timerIv = setInterval(() => {
     document.getElementById('pz-hud-timer').textContent =
-      pzFmtMs(Date.now() - pzState.startTime);
+      pzFmtMs(pzElapsedMs());
   }, 500);
+}
+
+function pzPauseTimer() {
+  if (!pzState.active || pzState.done) return;
+  if (pzState.timerIv) { clearInterval(pzState.timerIv); pzState.timerIv = null; }
+  if (!pzPausedAt) pzPausedAt = Date.now();
+}
+
+function pzResumeTimer() {
+  if (!pzState.active || pzState.done) return;
+  if (pzPausedAt) {
+    pzState.startTime += (Date.now() - pzPausedAt);
+    pzPausedAt = null;
+  }
+  if (!pzState.timerIv) pzStartTimer();
 }
 
 function pzStopTimer() {
@@ -78,6 +100,7 @@ function startPuzzle(p) {
   document.getElementById('game-over-banner').classList.remove('show');
 
   pzEnsureHud();
+  pzPausedAt = null;
   pzState = {
     active: true, puzzle: p,
     game: new Chess(p.fen),
@@ -118,6 +141,7 @@ function startPuzzle(p) {
 function pzExit() {
   pzState.active = false;
   pzStopTimer();
+  pzPausedAt = null;
   const hud = document.getElementById('pz-hud');
   if (hud) hud.style.display = 'none';
   pzClearTapSelection();
@@ -239,7 +263,7 @@ function pzCorrectMove(mv) {
 }
 
 async function pzRecordResult(solved) {
-  const timeMs = Date.now() - pzState.startTime;
+  const timeMs = pzElapsedMs();
   try {
     await fetch(`${FLASK_URL}/puzzles/result`, {
       method: 'POST',
@@ -258,7 +282,7 @@ async function pzRecordResult(solved) {
 async function pzFinish(solved) {
   pzState.done = true;
   pzStopTimer();
-  const timeMs = await pzRecordResult(solved);
+  const timeMs = pzElapsedMs();
 
   const btnNext = document.getElementById('pz-btn-next');
   if (solved) {
@@ -294,6 +318,35 @@ function pzNextUnsolved() {
   } else {
     pzExit();
   }
+}
+
+// ── Tab switch handling ──────────────────────────────────────
+// switchTab() se call hota hai — HUD hide/pause aur restore yahin hota hai
+
+function pzOnTabSwitch(name) {
+  const hud = document.getElementById('pz-hud');
+  if (!pzState || !pzState.active) {
+    if (hud) hud.style.display = 'none';
+    return;
+  }
+  if (name === 'play') {
+    if (hud && !pzState.done) hud.style.display = 'block';
+    pzResumeTimer();
+  } else {
+    // Doosre tab pe gaye — HUD chupao, timer pause (time barbaad na ho)
+    pzPauseTimer();
+    if (hud) hud.style.display = 'none';
+  }
+}
+
+// Play tab pe wapas aane par puzzle position + HUD restore karo
+function pzOnPlayTabReturn() {
+  if (!pzState.active) return;
+  board.position(pzState.game.fen());
+  updatePlayBoardVisibility();
+  const hud = document.getElementById('pz-hud');
+  if (hud && !pzState.done) hud.style.display = 'block';
+  pzResumeTimer();
 }
 
 // ── List & stats UI ───────────────────────────────────────────
