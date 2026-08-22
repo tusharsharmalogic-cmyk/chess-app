@@ -18,6 +18,7 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context
 from helpers import (
     lucas_lv_dif, lucas_classify, move_accuracy_from_dif,
     game_accuracy_from_move_accs, game_elo_from_accuracy, cp_from_info,
+    load_json_file, save_json_file,
 )
 
 review_bp = Blueprint("review", __name__)
@@ -31,19 +32,12 @@ RVH_MAX_ENTRIES = 100
 # ── Persistence ───────────────────────────────────────────────────────────────
 
 def load_review_history():
-    if not os.path.exists(REVIEW_HISTORY_FILE):
-        return []
-    try:
-        with open(REVIEW_HISTORY_FILE, "r") as f:
-            data = json.load(f)
-            return data if isinstance(data, list) else []
-    except Exception:
-        return []
+    data = load_json_file(REVIEW_HISTORY_FILE)
+    return data if isinstance(data, list) else []
 
 
 def save_review_history(history):
-    with open(REVIEW_HISTORY_FILE, "w") as f:
-        json.dump(history, f, indent=2)
+    save_json_file(REVIEW_HISTORY_FILE, history)
 
 
 # ==========================================================================

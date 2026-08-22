@@ -16,6 +16,7 @@ from helpers import (
 
     detect_game_phase, position_in_book,
     calc_elo_change, analyse_move,
+    load_json_file, save_json_file,
 )
 
 play_bp = Blueprint("play", __name__)
@@ -38,33 +39,21 @@ DEFAULT_PLAYER = {"name": "Player", "elo": 1200, "games_played": 0}
 # ── Persistence helpers ───────────────────────────────────────────────────────
 
 def load_bots():
-    if not os.path.exists(BOTS_FILE):
-        return {}
-    try:
-        with open(BOTS_FILE, "r") as f:
-            return json.load(f)
-    except Exception:
-        return {}
+    data = load_json_file(BOTS_FILE)
+    return data if isinstance(data, dict) else {}
 
 
 def save_bots(bots):
-    with open(BOTS_FILE, "w") as f:
-        json.dump(bots, f, indent=2)
+    save_json_file(BOTS_FILE, bots)
 
 
 def load_game():
-    if not os.path.exists(GAME_FILE):
-        return None
-    try:
-        with open(GAME_FILE, "r") as f:
-            return json.load(f)
-    except Exception:
-        return None
+    data = load_json_file(GAME_FILE)
+    return data if isinstance(data, dict) else None
 
 
 def save_game_state(state):
-    with open(GAME_FILE, "w") as f:
-        json.dump(state, f, indent=2)
+    save_json_file(GAME_FILE, state)
 
 
 def delete_game_state():
@@ -73,37 +62,24 @@ def delete_game_state():
 
 
 def load_history():
-    if not os.path.exists(HISTORY_FILE):
-        return []
-    try:
-        with open(HISTORY_FILE, "r") as f:
-            data = json.load(f)
-            return data if isinstance(data, list) else []
-    except Exception:
-        return []
+    data = load_json_file(HISTORY_FILE)
+    return data if isinstance(data, list) else []
 
 
 def save_history(history):
-    with open(HISTORY_FILE, "w") as f:
-        json.dump(history, f, indent=2)
+    save_json_file(HISTORY_FILE, history)
 
 
 def load_player():
-    if not os.path.exists(PLAYER_FILE):
-        return dict(DEFAULT_PLAYER)
-    try:
-        with open(PLAYER_FILE, "r") as f:
-            data = json.load(f)
-            merged = dict(DEFAULT_PLAYER)
-            merged.update(data)
-            return merged
-    except Exception:
-        return dict(DEFAULT_PLAYER)
+    data = load_json_file(PLAYER_FILE)
+    merged = dict(DEFAULT_PLAYER)
+    if isinstance(data, dict):
+        merged.update(data)
+    return merged
 
 
 def save_player(player):
-    with open(PLAYER_FILE, "w") as f:
-        json.dump(player, f, indent=2)
+    save_json_file(PLAYER_FILE, player)
 
 
 # ── Engine helper (shared global from c.py) ──────────────────────────────────

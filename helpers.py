@@ -5,10 +5,49 @@ Phase detection, ELO calc, tactical/strategic detection, move classification, Lu
 
 import math
 import os
+import json
 import chess
 import chess.polyglot
 
 BASE_DIR = "/sdcard/C"
+
+# ── Safe JSON persistence (atomic write + corrupt-file backup) ──────────────
+
+def load_json_file(path):
+    """
+    Load a JSON file safely.
+    Returns None if file missing or unreadable.
+    If the file is corrupted (partial write, app kill mid-save), it is moved
+    to <path>.corrupt as a backup instead of being silently destroyed.
+    """
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except Exception:
+        try:
+            backup = path + ".corrupt"
+            os.replace(path, backup)
+            print(f"[json] Corrupt file backed up: {path} -> {backup}")
+        except Exception:
+            pass
+        return None
+
+
+def save_json_file(path, data):
+    """
+    Atomic JSON write: write to a temp file first, fsync, then os.replace().
+    Ensures the target file is never left half-written even if the app is
+    killed mid-save (common on Termux/Android).
+    """
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
 
 # ── Lucas Chess material weights ─────────────────────────────────────────────
 

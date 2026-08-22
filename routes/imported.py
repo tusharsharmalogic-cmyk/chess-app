@@ -10,6 +10,8 @@ import time
 
 from flask import Blueprint, request, jsonify
 
+from helpers import load_json_file, save_json_file
+
 imported_bp = Blueprint("imported", __name__)
 
 BASE_DIR = "/sdcard/C"
@@ -21,19 +23,12 @@ IMPORTED_MAX = 500
 # ── Persistence ───────────────────────────────────────────────────────────────
 
 def load_imported_games():
-    if not os.path.exists(IMPORTED_GAMES_FILE):
-        return []
-    try:
-        with open(IMPORTED_GAMES_FILE, "r") as f:
-            data = json.load(f)
-            return data if isinstance(data, list) else []
-    except Exception:
-        return []
+    data = load_json_file(IMPORTED_GAMES_FILE)
+    return data if isinstance(data, list) else []
 
 
 def save_imported_games(games):
-    with open(IMPORTED_GAMES_FILE, "w") as f:
-        json.dump(games, f, indent=2)
+    save_json_file(IMPORTED_GAMES_FILE, games)
 
 
 # ==========================================================================
