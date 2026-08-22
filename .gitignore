@@ -1,0 +1,8 @@
+# Python
+__pycache__/
+*.pyc
+
+# Runtime data (device-specific, git me nahi jayega)
+play_data/
+*.corrupt
+*.tmp
