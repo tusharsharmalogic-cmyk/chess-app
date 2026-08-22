@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Chess Analyzer</title>
+<link rel="stylesheet" href="static/css/chessboard-1.0.0.min.css">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/css/base.css">
+<link rel="stylesheet" href="static/css/board.css">
+<link rel="stylesheet" href="static/css/layout.css">
+<link rel="stylesheet" href="static/css/analysis.css">
+<link rel="stylesheet" href="static/css/play.css">
+<link rel="stylesheet" href="static/css/panels.css">
+</head>
+<body>
+
+<div class="main">
+  <div class="board-area">
+    <div class="eval-container">
+      <div class="eval-label">
+        <span id="eval-label-left">♙ White</span>
+        <span id="eval-text" style="color:var(--accent)">0.00</span>
+        <span id="eval-label-right">Black ♟</span>
+      </div>
+      <div class="eval-bar-wrap">
+        <div class="eval-bar-fill" id="eval-bar"></div>
+      </div>
+    </div>
+
+    <!-- ANALYSIS player row TOP (black) — shown only on analysis/pgn/fen tabs -->
+    <div class="player-row" id="analysis-top-row">
+      <div class="clock-box" id="analysis-clock-top">
+        <div class="clock-label" id="analysis-label-top">♟ Black</div>
+        <div class="clock-time" id="analysis-time-top" style="display:none">—</div>
+      </div>
+      <div class="cap-inline" id="analysis-cap-top-pieces"></div>
+      <span class="cap-adv" id="analysis-cap-top-adv" style="color:var(--danger)"></span>
+    </div>
+
+    <!-- TOP: dialogue first, then clock+captured row (closest to board) -->
+    <div id="bot-dialogue-bubble-top" class="bot-dialogue-bubble" style="display:none;width:100%;max-width:360px;background:rgba(196,163,90,0.10);border:1px solid rgba(196,163,90,0.3);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--accent);line-height:1.6;position:relative;">
+      <span class="bot-dialogue-tag" style="font-size:9px;color:var(--text3);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.06em">🎭 <span id="bot-dialogue-name-top">Bot</span> says</span>
+      <span id="bot-dialogue-text-top"></span>
+    </div>
+
+    <div class="player-row" id="clock-top-row">
+      <div class="clock-box" id="clock-bot">
+        <span class="bvb-turn-dot" id="bvb-turn-dot-top"></span>
+        <div class="clock-label" id="clock-bot-label">🤖 Bot</div>
+        <div class="clock-time" id="clock-bot-time">10:00</div>
+      </div>
+      <div class="cap-inline" id="cap-top-pieces"></div>
+      <span class="cap-adv" id="cap-top-adv" style="color:var(--danger)"></span>
+    </div>
+
+    <div id="board-wrapper">
+      <div id="board"></div>
+      <svg id="arrow-svg" viewBox="0 0 8 8" preserveAspectRatio="none">
+        <defs>
+          <marker id="ah-best" markerWidth="4" markerHeight="4" refX="1.5" refY="1.5" orient="auto">
+            <path d="M0,0 L3,1.5 L0,3 L0.4,1.5 Z" fill="rgba(97,189,79,0.95)"/>
+          </marker>
+          <marker id="ah-last" markerWidth="4" markerHeight="4" refX="1.5" refY="1.5" orient="auto">
+            <path d="M0,0 L3,1.5 L0,3 L0.4,1.5 Z" fill="rgba(128,128,128,0.95)"/>
+          </marker>
+          <marker id="ah-threat" markerWidth="4" markerHeight="4" refX="1." refY="1.5" orient="auto">
+            <path d="M0,0 L3,1.5 L0,3 L0.4,1.5 Z" fill="rgba(220,140,40,0.95)"/>
+          </marker>
+          <marker id="ah-review" markerWidth="4" markerHeight="4" refX="1.5" refY="1.5" orient="auto">
+            <path d="M0,0 L3,1.5 L0,3 L0.4,1.5 Z" fill="rgba(74,158,255,0.95)"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <!-- BOTTOM: clock+captured row (closest to board), then dialogue below -->
+    <div class="player-row" id="clock-bottom-row">
+      <div class="clock-box" id="clock-player">
+        <span class="bvb-turn-dot" id="bvb-turn-dot-bottom"></span>
+        <div class="clock-label" id="clock-player-label">♙ You</div>
+        <div class="clock-time" id="clock-player-time">10:00</div>
+      </div>
+      <div class="cap-inline" id="cap-bottom-pieces"></div>
+      <span class="cap-adv" id="cap-bottom-adv" style="color:var(--accent2)"></span>
+    </div>
+
+    <!-- Bottom dialogue (WHITE bot in BvB; hidden in Play vs Bot) -->
+    <div id="bot-dialogue-bubble-bottom" class="bot-dialogue-bubble" style="display:none;width:100%;max-width:360px;background:rgba(196,163,90,0.10);border:1px solid rgba(196,163,90,0.3);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--accent);line-height:1.6;position:relative;">
+      <span class="bot-dialogue-tag" style="font-size:9px;color:var(--text3);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.06em">🎭 <span id="bot-dialogue-name-bottom">Bot</span> says</span>
+      <span id="bot-dialogue-text-bottom"></span>
+    </div>
+
+    <!-- ANALYSIS player row BOTTOM (white) — shown only on analysis/pgn/fen tabs -->
+    <div class="player-row" id="analysis-bottom-row">
+      <div class="clock-box" id="analysis-clock-bottom">
+        <div class="clock-label" id="analysis-label-bottom">♙ White</div>
+        <div class="clock-time" id="analysis-time-bottom" style="display:none">—</div>
+      </div>
+      <div class="cap-inline" id="analysis-cap-bottom-pieces"></div>
+      <span class="cap-adv" id="analysis-cap-bottom-adv" style="color:var(--accent2)"></span>
+    </div>
+    <!-- Review: Row 6 — Move classification badge (shown during move-by-move review) -->
+    <div id="rv-classification-row" style="display:none;width:100%;max-width:360px">
+      <div id="rv-classification-badge" style="text-align:center;padding:5px 12px;border-radius:6px;font-size:13px;font-weight:600;letter-spacing:0.03em"></div>
+    </div>
+
+  </div>
+
+  <div class="panel">
+
+    <!-- Analysis Tab -->
+    <div class="tab-content active" id="tab-analysis">
+      <div class="depth-row">
+        <span>Depth</span>
+        <input type="range" min="5" max="20" value="12" id="depth-slider" oninput="document.getElementById('depth-val').textContent=this.value">
+        <span class="depth-val" id="depth-val">12</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn primary" onclick="analyzePosition()">▶ Analyze</button>
+        <button class="btn" onclick="flipBoard()">⇅ Flip</button>
+        <button class="btn danger" onclick="resetBoard()">✕ Reset</button>
+      </div>
+      <div class="nav-row">
+        <button class="btn" onclick="goToStart()" title="Start">⏮</button>
+        <button class="btn" onclick="prevMove()" title="Previous">◀</button>
+        <button class="btn" onclick="nextMove()" title="Next">▶</button>
+        <button class="btn" onclick="goToEnd()" title="End">⏭</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="openSetupPosition()">🛠 Set Up Position</button>
+      </div>
+
+      <!-- Set Up Position panel -->
+      <div class="setup-panel" id="setup-panel">
+        <div class="setup-tray" id="setup-tray-white"></div>
+        <div class="setup-tray" id="setup-tray-black"></div>
+
+        <div class="btn-row">
+          <button class="btn" id="setup-eraser-btn" onclick="setupSelectPiece(null)">🚫 Erase</button>
+          <button class="btn" onclick="setupClearBoard()">🗑 Clear Board</button>
+          <button class="btn" onclick="setupStartPosition()">↺ Start Pos</button>
+        </div>
+
+        <div class="play-field">
+          <div class="play-label">Turn to move</div>
+          <div class="btn-row">
+            <button class="btn" id="setup-turn-w" onclick="setupSetTurn('w')">⚪ White</button>
+            <button class="btn" id="setup-turn-b" onclick="setupSetTurn('b')">⚫ Black</button>
+          </div>
+        </div>
+
+        <!-- Castling Rights -->
+<div class="play-field">
+  <div class="play-label">Castling Rights</div>
+  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px;"><input type="checkbox" id="castling-wk" checked> <span>♔ White O-O</span></label>
+    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px;"><input type="checkbox" id="castling-wq" checked> <span>♕ White O-O-O</span></label>
+    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px;"><input type="checkbox" id="castling-bk" checked> <span>♚ Black O-O</span></label>
+    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px;"><input type="checkbox" id="castling-bq" checked> <span>♛ Black O-O-O</span></label>
+  </div>
+</div>
+        
+        <div class="btn-row">
+          <button class="btn primary" onclick="setupDone()">✓ Done</button>
+          <button class="btn" onclick="copySetupPGN()">📋 Copy PGN</button>
+          <button class="btn danger" onclick="setupCancel()">✕ Cancel</button>
+        </div>
+      </div>
+
+      <div class="analyzing-indicator" id="analyzing-indicator">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <span>Engine thinking...</span>
+      </div>
+
+      <!-- best-move-card hidden; elements kept for JS compatibility -->
+      <div style="display:none">
+        <div id="best-move"></div>
+        <div id="best-line"></div>
+      </div>
+
+      <div class="btn-row" style="margin-top:4px">
+        <button class="btn" id="suggestion-toggle-btn" onclick="toggleSuggestion()" style="border-color:var(--accent2);color:var(--accent2)">💡 Suggestion: ON</button>
+      </div>
+    </div>
+
+    <!-- FEN Tab removed — merged into PGN tab -->
+    <div class="tab-content" id="tab-fen" style="display:none!important"></div>
+
+    <!-- PGN Tab -->
+    <div class="tab-content" id="tab-pgn">
+      <div class="nav-row">
+        <button class="btn" onclick="goToStart()" title="Start">⏮</button>
+        <button class="btn" onclick="prevMove()" title="Previous">◀</button>
+        <button class="btn" onclick="nextMove()" title="Next">▶</button>
+        <button class="btn" onclick="goToEnd()" title="End">⏭</button>
+      </div>
+      <!-- Single current-move classification card (main line only, hidden when no review data) -->
+      <div id="pgn-move-cards" style="display:none;margin-top:6px;"></div>
+      <div class="fen-label">Move History</div>
+      <div class="pgn-moves" id="pgn-moves"></div>
+      <div class="copied-flash" id="pgn-copied-flash" style="text-align:right;margin-top:2px">✓ Copied!</div>
+      <div class="fen-area" style="margin-top:4px">
+        <div class="fen-label">Load PGN</div>
+        <textarea id="pgn-input" placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5..."></textarea>
+        <div class="btn-row">
+          <button class="btn primary" onclick="loadPGN()">Load Game</button>
+          <button class="btn" onclick="copyActiveVariationPGN()">📋 Copy PGN</button>
+        </div>
+      </div>
+      <div class="fen-area" style="margin-top:4px">
+        <div class="fen-label">Load FEN</div>
+        <textarea id="fen-input" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"></textarea>
+        <div class="btn-row">
+          <button class="btn primary" onclick="loadFEN()">Load Position</button>
+          <button class="btn" onclick="pasteAndLoad()">Paste</button>
+        </div>
+        <div class="fen-label" style="margin-top:4px">Current FEN <span style="color:var(--text3)">(tap to copy)</span></div>
+        <div class="current-fen" id="current-fen" onclick="copyFEN()">rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1</div>
+        <div class="copied-flash" id="copied-flash">✓ Copied!</div>
+      </div>
+    </div>
+
+
+
+    <!-- ══════════════════════════════════════════════════
+         PLAY TAB
+    ══════════════════════════════════════════════════ -->
+    <div class="tab-content" id="tab-play" style="padding:12px 14px">
+
+      <!-- Player ELO chip (hidden per user request, kept in DOM for JS compatibility) -->
+      <div id="player-elo-chip" style="display:none;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px">
+        <span>👤 <span id="elo-chip-name" style="color:var(--text);font-weight:600">Player</span></span>
+        <span style="font-family:'JetBrains Mono', monospace;color:var(--accent);font-weight:600">📊 <span id="elo-chip-rating">1200</span></span>
+      </div>
+
+      <!-- Resume banner -->
+      <div class="resume-banner" id="resume-banner">
+        <div class="resume-title">⏸ Unfinished game found</div>
+        <div class="resume-info" id="resume-info">vs Bot · 0 moves played</div>
+        <div class="btn-row">
+          <button class="btn primary sm" onclick="resumeSavedGame()">▶ Resume</button>
+          <button class="btn danger sm" onclick="discardSavedGame()">✕ Discard</button>
+        </div>
+      </div>
+
+      <!-- Sub-nav -->
+      <div class="play-subnav" id="play-subnav">
+        <div class="play-subbtn active" id="sb-makebot" onclick="playSubSwitch('makebot')">⚙ Make Bot</div>
+        <div class="play-subbtn" id="sb-playbot" onclick="playSubSwitch('playbot')">♟ Play Bot</div>
+        <div class="play-subbtn" id="sb-botvsbot" onclick="playSubSwitch('botvsbot')">⚔ Bot vs Bot</div>
+        <div class="play-subbtn" id="sb-history" onclick="playSubSwitch('history')">📜 History</div>
+      </div>
+
+      <!-- ── PAGE: Make a Bot ───────────────────────── -->
+      <div class="play-page active" id="play-page-makebot">
+
+        <div class="play-section">
+          <div class="play-section-header">👤 Player Profile</div>
+          <div class="play-section-body">
+            <div class="play-field">
+              <div class="play-label">Your Name</div>
+              <input type="text" class="play-input" id="player-name" placeholder="e.g. Rohan">
+            </div>
+            <div class="play-field">
+              <div class="play-label">Your ELO Rating</div>
+              <input type="number" class="play-input" id="player-elo" placeholder="e.g. 1200" min="100" max="4000">
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <div style="font-size:10px;color:var(--text3)">
+                Games played: <span id="player-games-played" style="color:var(--accent)">0</span>
+              </div>
+              <button class="btn primary sm" onclick="savePlayerProfile()">💾 Save Profile</button>
+            </div>
+            <div style="font-size:10px;color:var(--text3);line-height:1.5">
+              Match khatam hone par tumhari ELO automatically update hogi — bot ki "Estimated ELO" (neeche set karo) se compare karke, chess.com-style.
+            </div>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">⚙ Bot Settings</div>
+          <div class="play-section-body">
+
+            <div class="play-field">
+              <div class="play-label">Bot Name</div>
+              <input type="text" class="play-input" id="bot-name" placeholder="e.g. MyBot Tricky">
+            </div>
+
+            <!-- OPENING PHASE -->
+            <div class="play-section" style="border-color:rgba(196,163,90,0.35);margin-top:4px">
+              <div class="play-section-header" style="font-size:10px;padding:8px 12px;background:rgba(196,163,90,0.06)">
+                ♟ Opening Phase <span style="color:var(--text3);font-weight:400;font-size:9px;margin-left:4px">(Stockfish detects automatically)</span>
+              </div>
+              <div class="play-section-body" style="padding:10px 12px;gap:8px">
+                <div class="play-field">
+                  <div class="play-label">ELO &nbsp;<span id="sv-op-elo" style="color:var(--accent)">1500</span></div>
+                  <div class="play-slider-row">
+                    <span style="font-size:10px;color:var(--text3)">1320</span>
+                    <input type="range" min="1320" max="3190" value="1500" step="10" id="sl-op-elo"
+                      oninput="document.getElementById('sv-op-elo').textContent=this.value">
+                    <span style="font-size:10px;color:var(--text3)">3190</span>
+                  </div>
+                </div>
+                <div class="play-field">
+                  <div class="play-label">Depth &nbsp;<span id="sv-op-depth" style="color:var(--accent)">12</span></div>
+                  <div class="play-slider-row">
+                    <span style="font-size:10px;color:var(--text3)">1</span>
+                    <input type="range" min="1" max="20" value="12" step="1" id="sl-op-depth"
+                      oninput="document.getElementById('sv-op-depth').textContent=this.value">
+                    <span style="font-size:10px;color:var(--text3)">20</span>
+                  </div>
+                </div>
+                <div class="play-field">
+                  <div class="play-label">Think Time &nbsp;<span id="sv-op-think" style="color:var(--accent)">1000</span> ms</div>
+                  <div class="play-slider-row">
+                    <span style="font-size:10px;color:var(--text3)">50</span>
+                    <input type="range" min="50" max="10000" value="1000" step="50" id="sl-op-think"
+                      oninput="document.getElementById('sv-op-think').textContent=this.value">
+                    <span style="font-size:10px;color:var(--text3)">10000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MIDDLEGAME PHASE -->
+            <div class="play-section" style="border-color:rgba(143,184,110,0.35)">
+              <div class="play-section-header" style="font-size:10px;padding:8px 12px;background:rgba(143,184,110,0.06);color:var(--accent2)">
+                ⚔ Middlegame Phase
+              </div>
+              <div class="play-section-body" style="padding:10px 12px;gap:8px">
+                <div class="play-field">
+                  <div class="play-label">ELO &nbsp;<span id="sv-mg-elo" style="color:var(--accent2)">1500</span></div>
+                  <div class="play-slider-row">
+                    <span style="font-size:10px;color:var(--text3)">1320</span>
+                    <input type="range" min="1320" max="3190" value="1500" step="10" id="sl-mg-elo"
+                      oninput="document.getElementById('sv-mg-elo').textContent=this.value">
+                    <span style="font-size:10px;color:var(--text3)">3190</span>
+                  </div>
+                </div>
+                <div class="play-field">
+                  <div class="play-label">Depth &nbsp;<span id="sv-mg-depth" style="color:var(--accent2)">12</span></div>
+                  <div class="play-slider-row">
+                    <span style="font-size:10px;color:var(--text3)">1</span>
+                    <input type="range" min="1" max="20" value="12" step="1" id="sl-mg-depth"
+                      oninput="document.getElementById('sv-mg-depth').textContent=this.value">
+                    <span style="font-size:10px;color:var(--text3)">20</span>
+                  </div>
+                </div>
+                <div class="play-field">
+                  <div class="play-label">Think Time &nbsp;<span id="sv-mg-think" style="color:var(--accent2)">1000</span> ms</div>
+                  <div class="play-slider-row">
+                    <span style="font-size:10px;color:var(--text3)">50</span>
+                    <input type="range" min="50" max="10000" value="1000" step="50" id="sl-mg-think"
+                      oninput="document.getElementById('sv-mg-think').textContent=this.value">
+                    <span style="font-size:10px;color:var(--text3)">10000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ENDGAME PHASE -->
+            <div class="play-section" style="border-color:rgba(212,96,96,0.35)">
+              <div class="play-section-header" style="font-size:10px;padding:8px 12px;background:rgba(212,96,96,0.06);color:var(--danger)">
+                🏁 Endgame Phase
+              </div>
+              <div class="play-section-body" style="padding:10px 12px;gap:8px">
+                <div class="play-field">
+                  <div class="play-label">ELO &nbsp;<span id="sv-eg-elo" style="color:var(--danger)">1500</span></div>
+                  <div class="play-slider-row">
+                    <span style="font-size:10px;color:var(--text3)">1320</span>
+                    <input type="range" min="1320" max="3190" value="1500" step="10" id="sl-eg-elo"
+                      oninput="document.getElementById('sv-eg-elo').textContent=this.value">
+                    <span style="font-size:10px;color:var(--text3)">3190</span>
+                  </div>
+                </div>
+                <div class="play-field">
+                  <div class="play-label">Depth &nbsp;<span id="sv-eg-depth" style="color:var(--danger)">12</span></div>
+                  <div class="play-slider-row">
+                    <span style="font-size:10px;color:var(--text3)">1</span>
+                    <input type="range" min="1" max="20" value="12" step="1" id="sl-eg-depth"
+                      oninput="document.getElementById('sv-eg-depth').textContent=this.value">
+                    <span style="font-size:10px;color:var(--text3)">20</span>
+                  </div>
+                </div>
+                <div class="play-field">
+                  <div class="play-label">Think Time &nbsp;<span id="sv-eg-think" style="color:var(--danger)">1000</span> ms</div>
+                  <div class="play-slider-row">
+                    <span style="font-size:10px;color:var(--text3)">50</span>
+                    <input type="range" min="50" max="10000" value="1000" step="50" id="sl-eg-think"
+                      oninput="document.getElementById('sv-eg-think').textContent=this.value">
+                    <span style="font-size:10px;color:var(--text3)">10000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <button class="btn primary" onclick="saveBot()">💾 Save Bot</button>
+
+        <!-- ── Import Bots (multi-bot JSON) ── -->
+        <div class="play-section" style="border-color:rgba(196,163,90,0.3)">
+          <div class="play-section-header" style="background:rgba(196,163,90,0.07)">📦 Import Bots (JSON)</div>
+          <div class="play-section-body">
+
+            <div style="font-size:10px;color:var(--text3);line-height:1.6;padding:4px 0">
+              AI se generate kiya hua bot JSON yahan paste karo <b style="color:var(--text2)">ya file(s) upload karo</b>.<br>
+              <b style="color:var(--accent)">Single bot</b> ya <b style="color:var(--accent)">multiple bots array</b> — dono support hain.<br>
+              Bots automatically save ho jayenge with personality (agar ho toh).
+            </div>
+
+            <!-- Hidden file input — accepts multiple .json files -->
+            <input type="file" id="bot-json-file-input" accept=".json,application/json"
+              multiple style="display:none" onchange="handleBotFileImport(event)">
+
+            <!-- File upload drop zone -->
+            <div id="bot-file-dropzone"
+              onclick="document.getElementById('bot-json-file-input').click()"
+              ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+              ondragleave="this.style.borderColor='rgba(196,163,90,0.3)'"
+              ondrop="handleBotFileDrop(event)"
+              style="border:2px dashed rgba(196,163,90,0.3);border-radius:8px;padding:14px 10px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:rgba(196,163,90,0.03)">
+              <div style="font-size:20px;margin-bottom:4px">📂</div>
+              <div style="font-size:11px;color:var(--accent);font-weight:600">Tap to choose JSON file(s)</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Ya yahan drag & drop karo · Multiple files ek saath OK</div>
+            </div>
+
+            <!-- Selected files list -->
+            <div id="bot-files-list" style="display:none;flex-direction:column;gap:4px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Selected Files</div>
+              <div id="bot-files-list-inner" style="display:flex;flex-direction:column;gap:3px"></div>
+              <div class="btn-row" style="margin-top:4px">
+                <button class="btn" onclick="previewFileImport()">🔍 Preview</button>
+                <button class="btn primary" onclick="importBotsFromFiles()">📦 Import All Files</button>
+                <button class="btn danger" onclick="clearBotFiles()" style="flex:0;padding:10px 12px">✕</button>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;margin:2px 0">
+              <div style="flex:1;height:1px;background:var(--border)"></div>
+              <div style="font-size:10px;color:var(--text3)">YA PASTE KARO</div>
+              <div style="flex:1;height:1px;background:var(--border)"></div>
+            </div>
+
+            <div class="play-field">
+              <div class="play-label">Bot JSON (single ya array)</div>
+              <textarea class="play-input" id="multi-bot-json-input"
+                placeholder='Single bot:&#10;{"name":"Blaze","phase_opening":{...},"personality":{...}}&#10;&#10;Multiple bots:&#10;[{"name":"Bot1",...},{"name":"Bot2",...}]'
+                style="min-height:110px;resize:vertical;font-size:10px"></textarea>
+            </div>
+
+            <!-- Preview area -->
+            <div id="multi-bot-preview" style="display:none;flex-direction:column;gap:6px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Preview</div>
+              <div id="multi-bot-preview-list" style="display:flex;flex-direction:column;gap:5px"></div>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn" onclick="previewBotImport()">🔍 Preview</button>
+              <button class="btn primary" onclick="importMultipleBots()">📦 Import All</button>
+            </div>
+
+            <div id="multi-bot-status" style="display:none;font-size:11px;text-align:center;padding:4px 0"></div>
+
+            <hr style="border-color:var(--border);margin:4px 0">
+
+            <!-- Single personality attach (existing flow) -->
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px">Sirf Personality Attach Karo</div>
+            <div class="play-field">
+              <div class="play-label">Select Saved Bot</div>
+              <select class="bot-select" id="personality-bot-select">
+                <option value="">— Choose a bot —</option>
+              </select>
+            </div>
+            <div class="play-field">
+              <div class="play-label">Personality JSON</div>
+              <textarea class="play-input" id="personality-json-input"
+                placeholder='{"name":"Knight Rage","rules":[...]}'
+                style="min-height:70px;resize:vertical;font-size:10px"></textarea>
+            </div>
+            <button class="btn" onclick="importPersonality()">🎭 Attach Personality</button>
+
+          </div>
+        </div>
+
+        <div class="play-section" id="saved-bots-section">
+          <div class="play-section-header">🤖 Saved Bots</div>
+          <div class="play-section-body" style="padding:10px 14px">
+            <div class="bots-list" id="bots-list">
+              <div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">No bots saved yet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── BOT BUILDER ─────────────────────────────── -->
+        <div class="play-section" id="bb-section">
+          <div class="play-section-header" onclick="bbToggleSection()" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between">
+            <span>🧠 Visual Personality Builder</span>
+            <span id="bb-section-arrow" style="font-size:11px;color:var(--text3)">▾</span>
+          </div>
+          <div class="play-section-body" id="bb-section-body" style="padding:10px 12px;gap:10px">
+
+            <!-- Personality name -->
+            <div class="play-field">
+              <div class="play-label">Personality Name</div>
+              <input type="text" class="play-input" id="bb-personality-name"
+                placeholder="e.g. Aggressive Knight"
+                oninput="bbUpdatePreview()"
+                style="font-size:11px">
+            </div>
+
+            <!-- Rules list -->
+            <div id="bb-rules-container" style="display:flex;flex-direction:column;gap:6px"></div>
+
+            <button class="btn sm" onclick="bbAddRule()" style="width:100%;font-size:11px;border-style:dashed">＋ Add Rule</button>
+
+            <hr style="border-color:var(--border);margin:2px 0">
+
+            <!-- New bot create -->
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Ya naya bot bhi banao</div>
+            <div class="play-field">
+              <div class="play-label">New Bot Name</div>
+              <input type="text" class="play-input" id="bb-new-bot-name" placeholder="e.g. TrickyKnight" style="font-size:11px">
+            </div>
+
+            <!-- Phase settings grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+              <!-- Opening -->
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px">
+                <div style="font-size:9px;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">♟ Opening</div>
+                <div class="play-label">ELO</div>
+                <input type="number" class="play-input" id="bb-op-elo" value="1500" min="1320" max="3190" style="font-size:10px">
+                <div class="play-label" style="margin-top:4px">Depth</div>
+                <input type="number" class="play-input" id="bb-op-depth" value="12" min="1" max="20" style="font-size:10px">
+                <div class="play-label" style="margin-top:4px">Think (ms)</div>
+                <input type="number" class="play-input" id="bb-op-think" value="1000" min="100" style="font-size:10px">
+              </div>
+              <!-- Middlegame -->
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px">
+                <div style="font-size:9px;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">♞ Middle</div>
+                <div class="play-label">ELO</div>
+                <input type="number" class="play-input" id="bb-mg-elo" value="1500" min="1320" max="3190" style="font-size:10px">
+                <div class="play-label" style="margin-top:4px">Depth</div>
+                <input type="number" class="play-input" id="bb-mg-depth" value="12" min="1" max="20" style="font-size:10px">
+                <div class="play-label" style="margin-top:4px">Think (ms)</div>
+                <input type="number" class="play-input" id="bb-mg-think" value="1000" min="100" style="font-size:10px">
+              </div>
+              <!-- Endgame -->
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px">
+                <div style="font-size:9px;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">♔ Endgame</div>
+                <div class="play-label">ELO</div>
+                <input type="number" class="play-input" id="bb-eg-elo" value="1500" min="1320" max="3190" style="font-size:10px">
+                <div class="play-label" style="margin-top:4px">Depth</div>
+                <input type="number" class="play-input" id="bb-eg-depth" value="12" min="1" max="20" style="font-size:10px">
+                <div class="play-label" style="margin-top:4px">Think (ms)</div>
+                <input type="number" class="play-input" id="bb-eg-think" value="1000" min="100" style="font-size:10px">
+              </div>
+            </div>
+
+            <button class="btn primary" onclick="bbSaveNewBot()" style="width:100%;font-size:11px">💾 Save New Bot + Personality</button>
+
+            <!-- Status -->
+            <div id="bb-status" style="display:none;font-size:11px;text-align:center;padding:4px 0;font-weight:600"></div>
+
+            <!-- JSON Preview (collapsible) -->
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;user-select:none">
+                <div onclick="bbTogglePreview()" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;flex:1;padding:4px 0">Live JSON Preview</div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <button id="bb-copy-btn" onclick="bbCopyJSON()"
+                    style="font-size:9px;padding:2px 7px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text2);cursor:pointer;position:relative;z-index:2">📋 Copy</button>
+                  <button onclick="bbResetBuilder()"
+                    style="font-size:9px;padding:2px 7px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--danger);cursor:pointer;position:relative;z-index:2">🗑 Reset</button>
+                  <span onclick="bbTogglePreview()" id="bb-preview-arrow" style="font-size:11px;color:var(--text3);cursor:pointer">▾</span>
+                </div>
+              </div>
+              <pre id="bb-json-preview" style="margin:6px 0 0;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:9px;line-height:1.5;overflow-x:auto;max-height:220px;overflow-y:auto;color:var(--text2);font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all">// Personality naam dalo upar se...</pre>
+            </div>
+
+          </div><!-- end bb-section-body -->
+        </div><!-- end bb-section -->
+
+      </div><!-- end makebot page -->
+
+      <!-- ── PAGE: Play with Bot ────────────────────── -->
+      <div class="play-page" id="play-page-playbot">
+
+        <div class="play-section">
+          <div class="play-section-header">🤖 Select Bot</div>
+          <div class="play-section-body">
+            <select class="bot-select" id="match-bot-select">
+              <option value="">— Select a bot —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">⏱ Time Control</div>
+          <div class="play-section-body">
+            <div class="play-toggle-row">
+              <span class="play-toggle-label">Enable Time Control</span>
+              <label class="toggle-switch"><input type="checkbox" id="tog-timecontrol" onchange="toggleTimeInput()"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="play-field" id="time-input-field" style="display:none">
+              <div class="play-label">Minutes per side (1–180)</div>
+              <input type="number" class="play-input" id="match-time-min" min="1" max="180" value="10">
+            </div>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">♟ Play As</div>
+          <div class="play-section-body">
+            <div class="color-pills">
+              <div class="color-pill selected" id="pill-white" onclick="selectColor('white')">♙ White</div>
+              <div class="color-pill" id="pill-black" onclick="selectColor('black')">♟ Black</div>
+              <div class="color-pill" id="pill-random" onclick="selectColor('random')">🎲 Random</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">📋 Start From PGN (optional)</div>
+          <div class="play-section-body">
+            <div class="play-field">
+              <textarea class="play-input" id="pb-start-pgn" placeholder="1. e4 e5 2. Nf3 Nc6 ... (leave empty for normal start)" style="min-height:70px;resize:vertical"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">✨ Pre-Match Features</div>
+          <div class="play-section-body">
+            <div class="play-toggle-row">
+              <span class="play-toggle-label">Move Undo</span>
+              <label class="toggle-switch"><input type="checkbox" id="feat-undo" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="play-toggle-row">
+              <span class="play-toggle-label">Hint</span>
+              <label class="toggle-switch"><input type="checkbox" id="feat-hint" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="play-toggle-row">
+              <span class="play-toggle-label">Evaluation Bar</span>
+              <label class="toggle-switch"><input type="checkbox" id="feat-evalbar"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="play-toggle-row">
+              <span class="play-toggle-label">Threat Arrows <span style="color:#dc5050">(red)</span></span>
+              <label class="toggle-switch"><input type="checkbox" id="feat-threat"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="play-toggle-row">
+              <span class="play-toggle-label">Suggestion Arrows <span style="color:var(--accent2)">(green)</span></span>
+              <label class="toggle-switch"><input type="checkbox" id="feat-suggestion" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn primary" onclick="startMatch()" id="start-match-btn">▶ Start Game</button>
+
+      </div><!-- end playbot page -->
+      <!-- ── PAGE: Bot vs Bot ──────────────────────── -->
+      <div class="play-page" id="play-page-botvsbot">
+
+        <div class="play-section">
+          <div class="play-section-header" style="color:var(--accent)">♙ White Side — Bot</div>
+          <div class="play-section-body">
+            <select class="bot-select" id="bvb-white-select">
+              <option value="">— Select White Bot —</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="text-align:center;font-size:18px;color:var(--text3);padding:2px 0">vs</div>
+
+        <div class="play-section">
+          <div class="play-section-header" style="color:var(--text2)">♟ Black Side — Bot</div>
+          <div class="play-section-body">
+            <select class="bot-select" id="bvb-black-select">
+              <option value="">— Select Black Bot —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">⏱ Time Control</div>
+          <div class="play-section-body">
+            <div class="play-toggle-row">
+              <span class="play-toggle-label">Enable Time Control</span>
+              <label class="toggle-switch"><input type="checkbox" id="bvb-timecontrol" onchange="toggleBvbTimeInput()"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="play-field" id="bvb-time-field" style="display:none">
+              <div class="play-label">Minutes per side (1–180)</div>
+              <input type="number" class="play-input" id="bvb-time-min" min="1" max="180" value="5">
+            </div>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">⚡ Move Delay</div>
+          <div class="play-section-body">
+            <div class="play-field">
+              <div class="play-label">Delay between moves &nbsp;<span id="bvb-delay-val" style="color:var(--accent)">500</span> ms</div>
+              <div class="play-slider-row">
+                <span style="font-size:10px;color:var(--text3)">1</span>
+                <input type="range" min="1" max="3000" value="500" step="1" id="bvb-delay-slider"
+                  oninput="document.getElementById('bvb-delay-val').textContent=this.value">
+                <span style="font-size:10px;color:var(--text3)">3000</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">📋 Start From PGN (optional)</div>
+          <div class="play-section-body">
+            <div class="play-field">
+              <textarea class="play-input" id="bvb-start-pgn" placeholder="1. e4 e5 2. Nf3 Nc6 ... (leave empty for normal start)" style="min-height:70px;resize:vertical"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn primary" onclick="startBvbMatch()">⚔ Start Bot vs Bot</button>
+
+      </div><!-- end botvsbot page -->
+
+      <!-- ── PAGE: Game History ───────────────────── -->
+      <div class="play-page" id="play-page-history">
+
+        <div class="play-section">
+          <div class="play-section-header">📜 Game History
+            <span id="history-select-actions" style="display:none;gap:6px;align-items:center;float:right">
+              <span id="history-select-count" style="font-size:10px;color:var(--text2)">0 selected</span>
+              <span style="font-size:10px;color:var(--danger);cursor:pointer;font-weight:600" onclick="deleteSelectedHistory()">🗑 Delete</span>
+              <span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="cancelHistorySelect()">✕</span>
+            </span>
+            <span id="history-header-btns" style="float:right;display:flex;gap:10px;align-items:center">
+              <span style="font-size:10px;color:var(--accent);cursor:pointer" onclick="toggleHistorySelectMode()">☑ Select</span>
+              <span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="clearAllHistory()">🗑 Clear All</span>
+            </span>
+          </div>
+          <div class="play-section-body" id="history-list-body" style="gap:6px">
+            <div style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">Loading...</div>
+          </div>
+        </div>
+
+        <!-- ── Detail view for a single game ── -->
+        <div class="play-section" id="history-detail" style="display:none">
+          <div class="play-section-header">
+            <span id="history-detail-title" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Game Detail</span>
+            <span style="flex-shrink:0;font-size:10px;color:var(--accent);cursor:pointer" onclick="closeHistoryDetail()">✕ Close</span>
+          </div>
+          <div class="play-section-body">
+            <div id="history-detail-meta" style="font-size:11px;color:var(--text2);line-height:1.6"></div>
+
+            <div class="btn-row" style="margin-top:4px">
+              <button class="btn sm" onclick="copyHistoryPGN()">📋 Copy PGN</button>
+              <button class="btn sm" onclick="loadHistoryToAnalysis()">🔍 Open in Analysis</button>
+              <button class="btn sm" onclick="loadHistoryToReview()">📊 Open in Review</button>
+              <button class="btn danger sm" onclick="deleteHistoryGame()">🗑 Delete</button>
+            </div>
+
+            <!-- Review data panel (shown if this game has been reviewed) -->
+            <div id="history-review-panel" style="display:none;margin-top:8px;flex-direction:column;gap:8px">
+              <div class="play-section-header" style="font-size:10px">📊 Review Analysis</div>
+              <canvas id="history-eval-chart" style="width:100%;height:90px;display:block;border-radius:6px"></canvas>
+              <div id="history-review-table"></div>
+            </div>
+            <div id="history-no-review" style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0;display:none">
+              📊 Review nahi hua abhi — Open in Review se analysis karo
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Imported Games Section ── -->
+        <div class="play-section" id="imported-games-section">
+          <div class="play-section-header">📥 Imported Games
+            <span id="imported-select-actions" style="display:none;gap:6px;align-items:center;float:right">
+              <span id="imported-select-count" style="font-size:10px;color:var(--text2)">0 selected</span>
+              <span style="font-size:10px;color:var(--danger);cursor:pointer;font-weight:600" onclick="deleteSelectedImported()">🗑 Delete</span>
+              <span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="cancelImportedSelect()">✕</span>
+            </span>
+            <span id="imported-header-btns" style="float:right;display:flex;gap:10px;align-items:center">
+              <span style="font-size:10px;color:var(--accent);cursor:pointer" onclick="toggleImportedSelectMode()">☑ Select</span>
+              <span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="clearAllImported()">🗑 Clear All</span>
+            </span>
+          </div>
+          <div class="play-section-body" style="gap:8px">
+            <!-- Import controls -->
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <textarea id="import-pgn-input" rows="4" placeholder="PGN paste karo (ek ya multiple games)..." style="width:100%;box-sizing:border-box;background:var(--bg2);color:var(--text1);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:11px;font-family:monospace;resize:vertical"></textarea>
+              <div class="btn-row" style="gap:6px">
+                <button class="btn sm primary" onclick="importPGNFromText()">📥 Import PGN</button>
+                <label class="btn sm" style="cursor:pointer;margin:0">
+                  📂 Upload .txt/.pgn
+                  <input type="file" id="import-file-input" accept=".pgn,.txt" style="display:none" onchange="importFromFile(this)">
+                </label>
+                <span id="import-status" style="font-size:10px;color:var(--accent);align-self:center"></span>
+              </div>
+            </div>
+            <!-- Imported games list -->
+            <div id="imported-list-body" style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">No imported games yet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Detail view for a single imported game ── -->
+        <div class="play-section" id="imported-detail" style="display:none">
+          <div class="play-section-header">
+            <span id="imported-detail-title" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Game Detail</span>
+            <span style="flex-shrink:0;font-size:10px;color:var(--accent);cursor:pointer" onclick="closeImportedDetail()">✕ Close</span>
+          </div>
+          <div class="play-section-body">
+            <div id="imported-detail-meta" style="font-size:11px;color:var(--text2);line-height:1.7"></div>
+            <!-- Review data panel (shown if this imported game has been reviewed) -->
+            <div id="imported-review-panel" style="display:none;margin-top:8px;flex-direction:column;gap:8px">
+              <canvas id="imported-eval-chart" style="width:100%;height:90px;display:block;border-radius:6px"></canvas>
+              <div id="imported-review-table"></div>
+            </div>
+            <div id="imported-no-review" style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0;display:none">
+              No review found — open in Review tab to analyse.
+            </div>
+            <div class="btn-row" style="margin-top:6px">
+              <button class="btn sm" onclick="copyImportedPGN()">📋 Copy PGN</button>
+              <button class="btn sm" onclick="loadImportedToAnalysis()">🔍 Open in Analysis</button>
+              <button class="btn sm" onclick="loadImportedToReview()">📊 Open in Review</button>
+              <button class="btn danger sm" onclick="deleteImportedGame()">🗑 Delete</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end history page -->
+
+
+      <!-- ── IN-GAME BOT vs BOT CONTROLS ──────────── -->
+      <div class="ingame-controls" id="bvb-ingame-controls" style="display:none;flex-direction:column;gap:8px">
+
+        <div class="play-status-msg" id="bvb-status-msg">Waiting...</div>
+
+        <div class="bot-thinking" id="bvb-thinking">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          <span id="bvb-thinking-label">Bot thinking...</span>
+        </div>
+
+        <!-- Move navigation: browse past moves while paused -->
+        <div class="nav-row" id="bvb-nav-row">
+          <button class="btn" onclick="bvbBrowseStart()" title="Start">⏮</button>
+          <button class="btn" onclick="bvbBrowsePrev()" title="Previous">◀</button>
+          <button class="btn" onclick="bvbBrowseNext()" title="Next">▶</button>
+          <button class="btn" onclick="bvbBrowseLive()" title="Back to live position">⏭</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);text-align:center" id="bvb-browse-label"></div>
+
+        <div class="btn-row">
+          <button class="btn" onclick="bvbPauseResume()" id="bvb-pause-btn">⏸ Pause</button>
+          <button class="btn" onclick="playFlipBoard()">⇅ Flip</button>
+          <button class="btn" onclick="copyBvbPGN()">📋 Copy PGN</button>
+          <button class="btn danger" onclick="bvbStopMatch()">⏹ Stop</button>
+        </div>
+
+        <div class="game-over-banner" id="bvb-game-over-banner" style="display:none;flex-direction:column;gap:6px;background:rgba(196,163,90,0.12);border:1px solid var(--accent);border-radius:8px;padding:12px 16px;text-align:center">
+          <div class="game-over-title" id="bvb-game-over-title">Game Over</div>
+          <div class="game-over-reason" id="bvb-game-over-reason"></div>
+          <div class="btn-row" style="margin-top:4px">
+            <button class="btn primary sm" onclick="playSubSwitch('botvsbot')">🔄 New Match</button>
+          </div>
+        </div>
+
+        <!-- 🎭 Dialogue History Log (BvB) -->
+        <div id="bvb-dialogue-log" style="display:none;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 6px;border-top:1px solid var(--border);margin-top:4px">🎭 Dialogue History</div>
+          <div id="bvb-dialogue-log-items" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+
+      </div><!-- end bvb ingame controls -->
+
+
+      <!-- ── IN-GAME CONTROLS ───────────────────────── -->
+      <div class="ingame-controls" id="ingame-controls">
+
+        <div class="play-status-msg" id="play-status-msg">Your turn</div>
+
+        <div class="bot-thinking" id="bot-thinking">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          <span>Bot thinking...</span>
+        </div>
+
+        <div class="hint-flash" id="hint-flash">💡 Hint shown on board</div>
+
+        <div class="btn-row">
+          <button class="btn" onclick="playFlipBoard()">⇅ Flip</button>
+          <button class="btn" id="ingame-hint-btn" onclick="requestHint()" style="display:none">💡 Hint</button>
+          <button class="btn" id="ingame-undo-btn" onclick="undoPlayMove()" style="display:none">↩ Undo</button>
+          <button class="btn danger" onclick="resignGame()">🏳 Resign</button>
+        </div>
+        
+
+        <div class="game-over-banner" id="game-over-banner">
+          <div class="game-over-title" id="game-over-title">Game Over</div>
+          <div class="game-over-reason" id="game-over-reason"></div>
+          <div class="game-over-reason" id="game-over-elo" style="display:none;font-weight:600"></div>
+          <div class="btn-row" style="margin-top:4px">
+            <button class="btn primary sm" onclick="playSubSwitch('playbot')">🔄 New Game</button>
+          </div>
+        </div>
+
+        <!-- 🎭 Dialogue History Log -->
+        <div id="pvb-dialogue-log" style="display:none;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 6px;border-top:1px solid var(--border);margin-top:4px">🎭 Dialogue History</div>
+          <div id="pvb-dialogue-log-items" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+
+      </div><!-- end ingame controls -->
+
+    </div><!-- end tab-play -->
+
+    <!-- ══════════════════════════════════════════════════
+         REVIEW TAB
+    ══════════════════════════════════════════════════ -->
+    <div class="tab-content" id="tab-review" style="padding:12px 14px">
+
+      <!-- PHASE 1: Setup -->
+      <div id="review-setup-phase">
+        <div class="play-section">
+          <div class="play-section-header">📋 Load Game</div>
+          <div class="play-section-body">
+            <div class="play-field">
+              <div class="play-label">Paste PGN</div>
+              <textarea id="review-pgn-input" rows="5" placeholder="1. e4 e5 2. Nf3 Nc6...&#10;&#10;Ya Play tab se 'Open in Review' use karo"></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn primary" onclick="reviewLoadPGN()">▶ Load PGN</button>
+              <button class="btn" onclick="toggleReviewHistoryPanel()">📜 History</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Saved Review History list ── -->
+        <div class="play-section" id="review-history-section" style="display:none">
+          <div class="play-section-header">📜 Review History
+            <span id="rvh-select-actions" style="display:none;gap:6px;align-items:center;float:right">
+              <span id="rvh-select-count" style="font-size:10px;color:var(--text2)">0 selected</span>
+              <span style="font-size:10px;color:var(--danger);cursor:pointer;font-weight:600" onclick="deleteSelectedReviewHistory()">🗑 Delete</span>
+              <span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="cancelReviewHistorySelect()">✕</span>
+            </span>
+            <span id="rvh-header-btns" style="float:right;display:flex;gap:10px;align-items:center">
+              <span style="font-size:10px;color:var(--accent);cursor:pointer" onclick="toggleReviewHistorySelectMode()">☑ Select</span>
+              <span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="clearAllReviewHistory()">🗑 Clear All</span>
+              <span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="toggleReviewHistoryPanel()">✕ Close</span>
+            </span>
+          </div>
+          <div class="play-section-body" id="rvh-list-body" style="gap:6px"></div>
+        </div>
+
+        <!-- ── Detail view for one saved review ── -->
+        <div class="play-section" id="rvh-detail" style="display:none">
+          <div class="play-section-header">
+            <span id="rvh-detail-title" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Review Detail</span>
+            <span style="flex-shrink:0;font-size:10px;color:var(--accent);cursor:pointer" onclick="closeReviewHistoryDetail()">✕ Close</span>
+          </div>
+          <div class="play-section-body">
+            <!-- Players + Accuracy + ELO comparison -->
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+              <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+                <div style="padding:10px 12px;border-right:1px solid var(--border)">
+                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">♙ White</div>
+                  <div id="rvh-d-white-name" style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">White</div>
+                </div>
+                <div style="padding:10px 12px">
+                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">♟ Black</div>
+                  <div id="rvh-d-black-name" style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Black</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+                <div style="padding:8px 12px;border-right:1px solid var(--border)">
+                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">Accuracy</div>
+                  <div id="rvh-d-white-acc" style="font-size:20px;font-weight:700;color:var(--accent2)">0%</div>
+                </div>
+                <div style="padding:8px 12px">
+                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">Accuracy</div>
+                  <div id="rvh-d-black-acc" style="font-size:20px;font-weight:700;color:var(--accent2)">0%</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+                <div style="padding:8px 12px;border-right:1px solid var(--border)">
+                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">Est. ELO</div>
+                  <div id="rvh-d-white-elo" style="font-size:16px;font-weight:600;color:var(--accent)">—</div>
+                </div>
+                <div style="padding:8px 12px">
+                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">Est. ELO</div>
+                  <div id="rvh-d-black-elo" style="font-size:16px;font-weight:600;color:var(--accent)">—</div>
+                </div>
+              </div>
+              <!-- Per-classification counts (Best/Excellent/Good/Inaccuracy/Mistake/Blunder) -->
+              <div id="rvh-d-classification-rows"></div>
+            </div>
+
+            <div id="rvh-d-meta" style="font-size:11px;color:var(--text2);line-height:1.6;margin-top:8px"></div>
+
+            <div class="btn-row" style="margin-top:8px">
+              <button class="btn primary" onclick="resumeReviewFromHistory()">▶ Start Review</button>
+              <button class="btn sm" onclick="copyReviewHistoryPGN()">📋 Copy PGN</button>
+              <button class="btn danger sm" onclick="deleteReviewHistoryGame()">🗑 Delete</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Depth config — shown after PGN loaded -->
+        <div class="play-section" id="review-depth-section" style="display:none">
+          <div class="play-section-header">⚙ Analysis Settings</div>
+          <div class="play-section-body">
+            <div id="review-game-info" style="font-size:11px;color:var(--text2);line-height:1.6;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 12px"></div>
+            <div class="play-field" style="margin-top:4px">
+              <div class="play-label">Analysis Depth &nbsp;<span id="review-depth-val" style="color:var(--accent);font-weight:600">12</span></div>
+              <div class="play-slider-row">
+                <span style="font-size:10px;color:var(--text3)">1</span>
+                <input type="range" min="1" max="20" value="12" id="review-depth-slider"
+                  oninput="document.getElementById('review-depth-val').textContent=this.value">
+                <span style="font-size:10px;color:var(--text3)">20</span>
+              </div>
+            </div>
+            <div class="play-field" style="margin-top:4px">
+              <div class="play-label">
+                Think Time &nbsp;<span id="review-time-val" style="color:var(--accent);font-weight:600">2.0</span><span style="font-size:10px;color:var(--text3)">s</span>
+                &nbsp;<span style="font-size:9px;color:var(--text3)">(jo pehle ho — depth ya time)</span>
+              </div>
+              <div class="play-slider-row">
+                <span style="font-size:10px;color:var(--text3)">0.5s</span>
+                <input type="range" min="1" max="20" value="4" id="review-time-slider"
+                  oninput="document.getElementById('review-time-val').textContent=(this.value/2).toFixed(1)">
+                <span style="font-size:10px;color:var(--text3)">10s</span>
+              </div>
+              <div style="font-size:10px;color:var(--text3);margin-top:4px">
+                ⚡ Depth pehle poori ho gayi → time ignore &nbsp;|&nbsp; Time khatam → depth ignore
+              </div>
+            </div>
+            <button class="btn primary" onclick="startReviewAnalysis()" id="review-start-btn">🔍 Start Analysis</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHASE 2: Progress -->
+      <div id="review-progress-phase" style="display:none">
+        <div class="play-section">
+          <div class="play-section-header">
+            <span class="dot"></span><span class="dot" style="animation-delay:.2s"></span><span class="dot" style="animation-delay:.4s"></span>
+            &nbsp;Analysing...
+          </div>
+          <div class="play-section-body">
+            <div id="review-progress-text" style="font-size:12px;color:var(--text2);text-align:center">Move 0 / 0</div>
+            <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;border:1px solid var(--border)">
+              <div id="review-progress-bar" style="height:100%;background:var(--accent);border-radius:4px;width:0%;transition:width 0.3s"></div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);text-align:center">Engine har move analyse kar raha hai...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHASE 3: Summary results -->
+      <div id="review-summary-phase" style="display:none">
+
+        <!-- Comparison Table -->
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <!-- Header row: player names -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+            <div style="padding:10px 12px;border-right:1px solid var(--border)">
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">♙ White</div>
+              <div id="rv-white-name" style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">White</div>
+            </div>
+            <div style="padding:10px 12px">
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">♟ Black</div>
+              <div id="rv-black-name" style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Black</div>
+            </div>
+          </div>
+
+          <!-- Accuracy row -->
+          <div id="rv-row-acc" style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+            <div style="padding:8px 12px;border-right:1px solid var(--border)">
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">Accuracy</div>
+              <div id="rv-white-acc" style="font-size:20px;font-weight:700;color:var(--accent2)">0%</div>
+            </div>
+            <div style="padding:8px 12px">
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">Accuracy</div>
+              <div id="rv-black-acc" style="font-size:20px;font-weight:700;color:var(--accent2)">0%</div>
+            </div>
+          </div>
+
+          <!-- Est. ELO row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+            <div style="padding:8px 12px;border-right:1px solid var(--border)">
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">Est. ELO</div>
+              <div id="rv-white-elo" style="font-size:16px;font-weight:600;color:var(--accent)">—</div>
+            </div>
+            <div style="padding:8px 12px">
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">Est. ELO</div>
+              <div id="rv-black-elo" style="font-size:16px;font-weight:600;color:var(--accent)">—</div>
+            </div>
+          </div>
+
+          <!-- Per-classification rows (Best, Excellent, Good, Inaccuracy, Mistake, Blunder) -->
+          <div id="rv-classification-rows"></div>
+        </div>
+
+        <!-- Eval chart -->
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Eval over game</div>
+          <canvas id="rv-eval-chart" style="width:100%;height:100px;display:block"></canvas>
+        </div>
+
+        <div class="btn-row" style="margin-top:2px">
+          <button class="btn primary" onclick="startMoveByMove()">▶ Start Review</button>
+          <button class="btn" onclick="resetReview()">↺ New Game</button>
+        </div>
+      </div>
+
+      <!-- PHASE 4: Move-by-move review -->
+      <div id="review-movebymove-phase" style="display:none;flex-direction:column;gap:8px">
+
+        <!-- Hidden elements kept for JS compatibility -->
+        <div style="display:none">
+          <div id="rv-played-san"></div>
+          <div id="rv-best-san"></div>
+          <div id="rv-dif"></div>
+          <div id="rv-move-card"></div>
+        </div>
+
+        <!-- Row 7: PGN horizontal scroll + nav buttons -->
+        <div style="display:flex;align-items:center;gap:6px">
+          <div id="rv-move-list" style="flex:1;display:flex;gap:3px;overflow-x:auto;padding:4px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch"></div>
+          <div style="display:flex;gap:4px;flex-shrink:0">
+            <button class="btn" onclick="rvPrev()" title="Previous" style="padding:8px 10px;font-size:14px">◀</button>
+            <button class="btn" onclick="rvNext()" title="Next" style="padding:8px 10px;font-size:14px">▶</button>
+          </div>
+        </div>
+
+        <!-- Row 8: Open in Analysis (PGN only, no player names) -->
+        <button class="btn" onclick="rvOpenInAnalysisPgnOnly()" style="width:100%">🔍 Open in Analysis</button>
+
+        <!-- Row 9: Summary card -->
+        <button class="btn" onclick="rvBackToSummary()" style="width:100%">📊 Summary Card</button>
+
+        <!-- Row 10: Copy current PGN -->
+        <button class="btn" onclick="rvCopyCurrentPGN()" style="width:100%">📋 Copy Current PGN</button>
+        <div id="rv-copy-flash" style="display:none;font-size:10px;color:var(--accent2);text-align:center">✓ PGN Copied!</div>
+
+      </div>
+
+    </div><!-- end tab-review -->
+
+  </div><!-- end panel -->
+</div>
+</div>
+
+<div class="status-bar">
+  <div><span class="status-dot" id="status-dot"></span><span id="status-text">Connecting to engine...</span></div>
+  <div id="depth-status"></div>
+</div>
+
+<!-- WhatsApp-style bottom nav — PLAY is leftmost -->
+<nav class="bottom-nav">
+  <div class="nav-item" id="nav-play" onclick="switchTab('play')">
+    <span class="nav-icon">▶</span>
+    <span class="nav-label">Play</span>
+  </div>
+  <div class="nav-item active" id="nav-analysis" onclick="switchTab('analysis')">
+    <span class="nav-icon">🔍</span>
+    <span class="nav-label">Analysis</span>
+  </div>
+  <div class="nav-item" id="nav-pgn" onclick="switchTab('pgn')">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">PGN</span>
+  </div>
+  <!-- FEN tab merged into PGN tab -->
+  <div class="nav-item" id="nav-review" onclick="switchTab('review')">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label">Review</span>
+  </div>
+</nav>
+
+
+<script src="static/js/lib/jquery.min.js"></script>
+<div class="copy-pgn-btn" id="copy-pgn-btn" onclick="copyPlayPGN()" title="Copy PGN">📋</div>
+<div class="copy-pgn-flash" id="copy-pgn-flash">✓ PGN Copied!</div>
+
+<script src="static/js/lib/chessboard-1.0.0.min.js"></script>
+<script src="static/js/lib/chess.min.js"></script>
+
+<!-- App scripts — load order matters (board → analysis/history/pgn → tabs → play → personality → review) -->
+<script src="static/js/core/board.js"></script>
+<script src="static/js/shared/history.js"></script>
+<script src="static/js/analysis/pgn.js"></script>
+<script src="static/js/core/tabs.js"></script>
+<script src="static/js/play/play-ui.js"></script>
+<script src="static/js/play/play-moves.js"></script>
+<script src="static/js/play/play-setup.js"></script>
+<script src="static/js/play/bvb.js"></script>
+<script src="static/js/shared/personality.js"></script>
+<script src="static/js/play/bot-builder.js"></script>
+<script src="static/js/analysis/review.js"></script>
+<script>
+// ── Bot Builder section toggle ───────────────────────────
+function bbToggleSection() {
+  const body  = document.getElementById('bb-section-body');
+  const arrow = document.getElementById('bb-section-arrow');
+  if (!body) return;
+  const hidden = body.style.display === 'none';
+  body.style.display = hidden ? '' : 'none';
+  if (arrow) arrow.textContent = hidden ? '▾' : '▸';
+  if (hidden) bbInit(); // populate attach-select when opened
+}
+
+function bbTogglePreview() {
+  const pre   = document.getElementById('bb-json-preview');
+  const arrow = document.getElementById('bb-preview-arrow');
+  if (!pre) return;
+  const hidden = pre.style.display === 'none';
+  pre.style.display = hidden ? '' : 'none';
+  if (arrow) arrow.textContent = hidden ? '▾' : '▸';
+}
+
+// Init builder when Make Bot tab is shown
+document.addEventListener('DOMContentLoaded', () => {
+  // bbInit called lazily on first section open to avoid heavy render on load
+});
+</script>
+
+</body>
+</html>

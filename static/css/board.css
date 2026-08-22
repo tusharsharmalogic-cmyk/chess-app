@@ -1,0 +1,109 @@
+/* ============================================================
+   board.css — Board wrapper, eval bar, squares, arrows,
+               tap-to-move highlights, chessboard.js overrides
+   ============================================================ */
+
+/* Board area */
+.board-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 16px 8px;
+  gap: 10px;
+}
+
+/* Eval bar */
+.eval-container {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.eval-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text2);
+}
+.eval-bar-wrap {
+  height: 8px;
+  background: var(--black-side);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.eval-bar-fill {
+  height: 100%;
+  background: var(--white-side);
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  width: 50%;
+}
+.eval-score {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+  letter-spacing: -0.02em;
+  min-height: 28px;
+}
+.eval-score.positive { color: var(--accent2); }
+.eval-score.negative { color: var(--danger); }
+
+/* Board wrapper */
+#board-wrapper {
+  width: 100%;
+  max-width: 360px;
+  position: relative;
+  touch-action: none;
+}
+#board { width: 100%; }
+#board .square-55d63 { touch-action: none; user-select: none; -webkit-user-select: none; }
+
+/* Arrow SVG overlay */
+#arrow-svg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  overflow: visible;
+}
+
+/* Chessboard.js square colors */
+.white-1e1d7 { background-color: #f0e9d2 !important; }
+.black-3c85d { background-color: #7c5c3e !important; }
+.highlight-white { box-shadow: inset 0 0 0 4px rgba(196,163,90,0.8) !important; }
+.highlight-black { box-shadow: inset 0 0 0 4px rgba(196,163,90,0.8) !important; }
+
+/* All squares need position:relative for ::after to work */
+.square-55d63 { position: relative !important; }
+
+/* Tap-to-move: selected piece */
+.sq-selected { background-color: rgba(196,163,90,0.55) !important; }
+
+/* Legal move dot (empty square) */
+.sq-legal-dot::after {
+  content: '';
+  position: absolute;
+  width: 30%; height: 30%;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.22);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  pointer-events: none;
+}
+
+/* Legal move capture ring */
+.sq-legal-capture::after {
+  content: '';
+  position: absolute;
+  width: 88%; height: 88%;
+  border-radius: 50%;
+  border: 4px solid rgba(0,0,0,0.22);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  pointer-events: none;
+  box-sizing: border-box;
+}

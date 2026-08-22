@@ -1,0 +1,105 @@
+
+  :root {
+    --bg: #0e0e0f;
+    --bg2: #161618;
+    --bg3: #1e1e21;
+    --border: #2a2a2e;
+    --accent: #c4a35a;
+    --accent2: #8fb86e;
+    --danger: #d46060;
+    --text: #e8e4d8;
+    --text2: #8a8680;
+    --text3: #5a5650;
+    --eval-bar-bg: #222228;
+    --white-side: #e8e4d8;
+    --black-side: #1a1a1c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    position: relative;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  .logo {
+    font-family: 'Crimson Pro', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+  }
+  .logo span { color: var(--text2); font-size: 13px; font-family: 'JetBrains Mono', monospace; font-weight: 400; margin-left: 8px; }
+
+  .main {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    flex-direction: column;
+  }
+
+  /* Board area */
+  .board-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 16px 8px;
+    gap: 10px;
+  }
+
+  /* When on the Play tab and no game is active yet, hide the chessboard
+     entirely and let the Play tab's setup panel take the full screen. */
+  body.play-board-hidden .board-area {
+    display: none;
+  }
+  body.play-board-hidden .panel {
+    flex: 1;
+  }
+  body.play-board-hidden #tab-play {
+    min-height: calc(100vh - 58px);
+  }
+
+  /* On the Review tab, hide the chessboard until the move-by-move
+     analysis phase actually starts (no point showing an idle board
+     while the user is still setting up / waiting on analysis). */
+  body.review-board-hidden .board-area {
+    display: none;
+  }
+  body.review-board-hidden .panel {
+    flex: 1;
+  }
+  body.review-board-hidden #tab-review {
+    min-height: calc(100vh - 58px);
+  }
+
+  /* Review tab: board is read-only — block all pointer interaction */
+  body.review-readonly #board-wrapper {
+    pointer-events: none !important;
+    user-select: none !important;
+    cursor: default !important;
+  }
+  body.review-readonly #board-wrapper * {
+    pointer-events: none !important;
+    cursor: default !important;
+  }
+
+/* ── Scrollbar ── */
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+
+/* ── Animations ── */
+  @keyframes pulse { from { opacity: 0.2; } to { opacity: 1; } }

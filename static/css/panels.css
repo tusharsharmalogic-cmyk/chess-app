@@ -1,0 +1,333 @@
+/* ============================================================
+   panels.css — History list, Review tab, dialogue bubbles,
+                personality tag, import panel, ELO chip
+   ============================================================ */
+
+  .history-move-row .hm-time  { color: var(--accent); flex-shrink: 0; }
+
+  /* In-game overlay controls */
+  .ingame-controls {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ingame-controls.show { display: flex; }
+
+  /* Clock display — chess.com style, overlaid on board edges */
+  .clock-row { display: none; } /* hidden — clocks now live in board-area */
+
+  /* ── Player Row: Clock + Captured Pieces (same row) ── */
+  .player-row {
+    display: none;
+    width: 100%;
+    max-width: 360px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .player-row.show { display: flex; }
+
+  .clock-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .clock-box.active {
+    border-color: var(--accent);
+    background: rgba(196,163,90,0.10);
+  }
+  .clock-box.low {
+    border-color: var(--danger);
+    background: rgba(212,96,96,0.08);
+  }
+  .clock-label {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .clock-time {
+    font-size: 17px;
+    font-weight: 600;
+    font-family: 'Crimson Pro', serif;
+    color: var(--text);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .clock-time.low { color: var(--danger); }
+
+  /* Bot vs Bot: small turn-indicator dot shown next to whichever
+     bot's name is currently to move / thinking, replacing the old
+     verbose "White to move" / "White is thinking" text. */
+  .bvb-turn-dot {
+    display: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    margin-right: 5px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 0 rgba(143,184,110,0.6);
+    animation: bvbTurnPulse 1.1s infinite;
+  }
+  .bvb-turn-dot.show { display: inline-block; }
+  @keyframes bvbTurnPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(143,184,110,0.55); }
+    70%  { box-shadow: 0 0 0 5px rgba(143,184,110,0); }
+    100% { box-shadow: 0 0 0 0 rgba(143,184,110,0); }
+  }
+
+  /* Bot vs Bot move navigation — only usable while paused */
+  #bvb-nav-row.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* Captured pieces inline (right side of player-row) */
+  .cap-inline {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex: 1;
+    min-height: 24px;
+  }
+  .cap-piece {
+    font-size: 15px;
+    line-height: 1;
+  }
+  .cap-adv {
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 2px;
+    flex-shrink: 0;
+  }
+  /* Backwards compat — hide old separate strips */
+  .board-clock { display: none !important; }
+  .captured-strip { display: none !important; }
+
+  /* Status message in play */
+  .play-status-msg {
+    font-size: 12px;
+    color: var(--accent);
+    text-align: center;
+    min-height: 18px;
+    letter-spacing: 0.02em;
+  }
+
+  /* Thinking indicator */
+  .bot-thinking {
+    display: none;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: var(--text3);
+    justify-content: center;
+    padding: 4px 0;
+  }
+  .bot-thinking.show { display: flex; }
+
+  /* Game over banner */
+  .game-over-banner {
+    display: none;
+    background: rgba(196,163,90,0.12);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .game-over-banner.show { display: flex; }
+  .game-over-title {
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'Crimson Pro', serif;
+    color: var(--accent);
+  }
+  .game-over-reason {
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  /* Copy PGN floating icon (Play tab) */
+  .copy-pgn-btn {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.15s, transform 0.25s ease, box-shadow 0.25s ease;
+    z-index: 1000;
+  }
+  .copy-pgn-btn:hover { background: var(--border); border-color: var(--accent); }
+  .copy-pgn-btn:active { transform: scale(0.97); }
+  .copy-pgn-btn.show { display: flex; }
+  .copy-pgn-btn.pulse {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 6px rgba(196,163,90,0.18);
+  }
+  .copy-pgn-flash {
+    position: absolute;
+    bottom: 50px;
+    left: 12px;
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(30,30,30,0.85);
+    padding: 3px 8px;
+    border-radius: 5px;
+    display: none;
+    z-index: 1000;
+  }
+  .copy-pgn-flash.show { display: block; }
+
+  /* Resume banner */
+  .resume-banner {
+    display: none;
+    background: rgba(143,184,110,0.1);
+    border: 1px solid var(--accent2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .resume-banner.show { display: flex; }
+  .resume-title {
+    font-size: 12px;
+    color: var(--accent2);
+    font-weight: 600;
+  }
+  .resume-info {
+    font-size: 10px;
+    color: var(--text3);
+    line-height: 1.6;
+  }
+
+  /* Compact btn */
+  .btn.sm {
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+
+  /* Play eval bar — visible only when enabled */
+  #play-eval-container {
+    display: none;
+  }
+  #play-eval-container.show {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 16px 6px;
+  }
+
+  /* Arrow defs for threat */
+  /* (added dynamically in JS) */
+
+  /* Hint flash */
+  .hint-flash {
+    display: none;
+    font-size: 10px;
+    color: var(--accent2);
+    text-align: center;
+  }
+  .hint-flash.show { display: block; }
+  /* Fix drag scroll */
+  #board .square-55d63 { touch-action: none; user-select: none; -webkit-user-select: none; }
+  #board-wrapper { touch-action: none; }
+
+  /* ── Captured Pieces Panels ── */
+  .captured-strip {
+    display: none;
+    width: 100%;
+    max-width: 360px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 10px;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    min-height: 36px;
+  }
+  .captured-strip.show { display: flex; }
+  .cap-strip-label {
+    font-size: 9px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding-right: 6px;
+    line-height: 1.3;
+  }
+  .cap-strip-pieces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    flex: 1;
+    align-items: center;
+  }
+  .cap-piece {
+    font-size: 16px;
+    line-height: 1;
+  }
+  .cap-strip-adv {
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    min-width: 18px;
+    text-align: right;
+  }
+
+  /* ── Personality Tag on Bot Card ── */
+  .bot-personality-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 4px 8px;
+    background: rgba(196,163,90,0.08);
+    border: 1px solid rgba(196,163,90,0.28);
+    border-radius: 5px;
+    font-size: 10px;
+    color: var(--accent);
+  }
+  .bot-personality-tag span { flex: 1; letter-spacing: 0.03em; }
+  .bot-personality-remove {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 2px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .bot-personality-remove:hover { color: var(--danger); }
+
+  /* ── Import Personality Panel ── */
+  .import-personality-panel {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .import-personality-panel.show { display: flex; }
+
