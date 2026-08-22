@@ -22,6 +22,7 @@ from flask_cors import CORS
 from routes.play     import play_bp
 from routes.review   import review_bp
 from routes.imported import imported_bp
+from routes.puzzles  import puzzles_bp
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ def get_engine():
 app.register_blueprint(play_bp)
 app.register_blueprint(review_bp)
 app.register_blueprint(imported_bp)
+app.register_blueprint(puzzles_bp)
 
 # ── Static file serving ───────────────────────────────────────────────────────
 

@@ -251,6 +251,7 @@
         <div class="play-subbtn" id="sb-playbot" onclick="playSubSwitch('playbot')">♟ Play Bot</div>
         <div class="play-subbtn" id="sb-botvsbot" onclick="playSubSwitch('botvsbot')">⚔ Bot vs Bot</div>
         <div class="play-subbtn" id="sb-history" onclick="playSubSwitch('history')">📜 History</div>
+        <div class="play-subbtn" id="sb-puzzles" onclick="playSubSwitch('puzzles')">🧩 Puzzle</div>
       </div>
 
       <!-- ── PAGE: Make a Bot ───────────────────────── -->
@@ -913,6 +914,66 @@
         </div>
 
       </div><!-- end ingame controls -->
+
+      <!-- ── PAGE: Tactics Puzzles ──────────────────── -->
+      <div class="play-page" id="play-page-puzzles">
+
+        <!-- Stats bar -->
+        <div class="play-section">
+          <div class="play-section-header">🧩 Tactics Trainer</div>
+          <div class="play-section-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+              <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px">
+                <div id="pz-stat-solved" style="font-size:18px;font-weight:700;color:var(--accent2)">0</div>
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase">Solved</div>
+              </div>
+              <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px">
+                <div id="pz-stat-streak" style="font-size:18px;font-weight:700;color:var(--accent)">0</div>
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase">Streak 🔥</div>
+              </div>
+              <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px">
+                <div id="pz-stat-best" style="font-size:18px;font-weight:700;color:var(--text)">0</div>
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase">Best Streak</div>
+              </div>
+            </div>
+            <div id="pz-stat-avg" style="font-size:10px;color:var(--text3);text-align:center"></div>
+          </div>
+        </div>
+
+        <!-- Get puzzles -->
+        <div class="play-section">
+          <div class="play-section-header">📥 Get Puzzles</div>
+          <div class="play-section-body">
+            <div class="btn-row">
+              <button class="btn primary" id="pz-fetch-btn" onclick="pzFetch(5)">⬇ Lichess se Fetch (5)</button>
+              <button class="btn" onclick="pzToggleImport()">📋 Import CSV</button>
+            </div>
+            <div id="pz-import-panel" style="display:none;flex-direction:column;gap:6px">
+              <div style="font-size:10px;color:var(--text3)">
+                Lichess puzzle DB (<a href="https://database.lichess.org/#puzzles" target="_blank" style="color:var(--accent)">database.lichess.org</a>) se rows copy karke paste karo:
+                <span style="color:var(--accent)">PuzzleId,FEN,Moves,Rating,...</span> format.
+              </div>
+              <textarea id="pz-import-text" rows="5" placeholder="00sJb,q1r3k1/...  ,d7d8q ...,1801,101,..." style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px;width:100%"></textarea>
+              <button class="btn primary sm" id="pz-import-btn" onclick="pzImportCsv()">📥 Import Pasted Rows</button>
+            </div>
+            <div id="pz-fetch-status" style="font-size:10px;color:var(--text3);display:none"></div>
+          </div>
+        </div>
+
+        <!-- Puzzle list -->
+        <div class="play-section">
+          <div class="play-section-header">🎯 Puzzle List
+            <span style="float:right;display:flex;gap:10px;align-items:center">
+              <span id="pz-count-label" style="font-size:10px;color:var(--text3)"></span>
+              <span style="font-size:10px;color:var(--danger);cursor:pointer" onclick="pzClearAll()">🗑 Clear All</span>
+            </span>
+          </div>
+          <div class="play-section-body" id="pz-list-body" style="gap:6px">
+            <div style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">Koi puzzle nahi — upar se fetch ya import karo</div>
+          </div>
+        </div>
+
+      </div><!-- end puzzles page -->
 
     </div><!-- end tab-play -->
 

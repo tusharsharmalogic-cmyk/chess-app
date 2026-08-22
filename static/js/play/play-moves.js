@@ -25,6 +25,12 @@ function clearPlayTapSelection() {
 function handleSquareTap(square) {
   if (_currentTab === 'review') return;
 
+  // Tactics puzzle mode — board taps go to the puzzle handler
+  if (typeof pzState !== 'undefined' && pzState && pzState.active) {
+    handlePuzzleSquareTap(square);
+    return;
+  }
+
   if (_currentTab === 'analysis' || _currentTab === 'pgn' || _currentTab === 'fen') {
     handleSquareTapAnalysis(square);
     return;

@@ -861,7 +861,8 @@
   // actually active; otherwise hide it so the Play tab's setup panel
   // takes the full screen (mobile-friendly).
   function updatePlayBoardVisibility() {
-    const gameActive = playState.active || (typeof bvbState !== 'undefined' && bvbState && bvbState.active);
+    const pzActive = (typeof pzState !== 'undefined' && pzState && pzState.active);
+    const gameActive = playState.active || (typeof bvbState !== 'undefined' && bvbState && bvbState.active) || pzActive;
     document.body.classList.toggle('play-board-hidden', !gameActive);
   }
 

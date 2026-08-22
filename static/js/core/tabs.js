@@ -235,7 +235,7 @@
   }
 
   function playSubSwitch(page) {
-    ['makebot','playbot','botvsbot','history'].forEach(p => {
+    ['makebot','playbot','botvsbot','history','puzzles'].forEach(p => {
       const sb = document.getElementById('sb-' + p);
       const pg = document.getElementById('play-page-' + p);
       if (sb) sb.classList.toggle('active', p === page);
@@ -255,6 +255,8 @@
     if (page === 'botvsbot') populateBvbSelects();
     // Load history list when switching to history
     if (page === 'history') { closeHistoryDetail(); renderHistoryList(); renderImportedList(); }
+    // Load puzzle list + stats when switching to puzzles
+    if (page === 'puzzles' && typeof pzRefreshUI === 'function') pzRefreshUI();
 
     updatePlayBoardVisibility();
   }
@@ -959,4 +961,11 @@
   function escHtml(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  // ── Load puzzles.js dynamically (tactics trainer) ──
+  (function () {
+    const s = document.createElement('script');
+    s.src = 'static/js/play/puzzles.js';
+    document.head.appendChild(s);
+  })();
 
