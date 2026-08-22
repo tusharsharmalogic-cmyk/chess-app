@@ -282,7 +282,8 @@ async function pzRecordResult(solved) {
 async function pzFinish(solved) {
   pzState.done = true;
   pzStopTimer();
-  const timeMs = pzElapsedMs();
+  // Result backend me save karo — isse tick ✅, streak 🔥 aur stats update hote hain
+  const timeMs = await pzRecordResult(solved);
 
   const btnNext = document.getElementById('pz-btn-next');
   if (solved) {
