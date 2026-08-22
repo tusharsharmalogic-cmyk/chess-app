@@ -91,6 +91,22 @@ def _compute_best_day(stats):
                          if best_date else None)
 
 
+def _stats_with_today(stats):
+    """Return a copy of stats with a computed 'today' block for display."""
+    today = _today_str()
+    day = (stats.get("daily") or {}).get(today) or {"points": 0, "solved": 0}
+    out = dict(stats)
+    out["today"] = {
+        "date":   today,
+        "points": int(day.get("points") or 0),
+        "solved": int(day.get("solved") or 0),
+    }
+    # best_day purane data ke liye bhi fresh rakho
+    if not out.get("best_day"):
+        _compute_best_day(out)
+    return out
+
+
 def save_puzzles(data):
     save_json_file(PUZZLES_FILE, data)
 
@@ -124,14 +140,15 @@ def make_record(pz_id, fen, solution, rating=0, themes=""):
 def list_puzzles():
     data = load_puzzles()
     puzzles = list(reversed(data["puzzles"]))   # newest first
-    return jsonify({"puzzles": puzzles, "stats": data["stats"],
+    return jsonify({"puzzles": puzzles,
+                    "stats": _stats_with_today(data["stats"]),
                     "total": len(puzzles)})
 
 
 @puzzles_bp.route("/puzzles/stats", methods=["GET"])
 def get_stats():
     data = load_puzzles()
-    return jsonify({"stats": data["stats"]})
+    return jsonify({"stats": _stats_with_today(data["stats"])})
 
 
 @puzzles_bp.route("/puzzles", methods=["DELETE"])
