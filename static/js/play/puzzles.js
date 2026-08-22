@@ -390,6 +390,7 @@ async function pzRefreshUI() {
         <span style="flex:1;min-width:0">
           <span style="font-size:11px;font-weight:600;color:var(--text)">${escHtml(meta)}</span>
         </span>
+        <button class="btn sm" title="Copy FEN" onclick='pzCopyFen("${p.id}")'>📋 FEN</button>
         <button class="btn primary sm" onclick='startPuzzleById("${p.id}")'>▶ Solve</button>
       </div>`;
     }).join('');
@@ -401,6 +402,38 @@ async function pzRefreshUI() {
 function startPuzzleById(id) {
   const p = pzList.find(x => x.id === id);
   if (p) startPuzzle(JSON.parse(JSON.stringify(p)));   // deep copy — original stays untouched
+}
+
+// Puzzle ki FEN copy karo — Analysis tab me paste karke khud analyse karo
+function pzCopyFen(id) {
+  const p = pzList.find(x => x.id === id);
+  if (!p || !p.fen) return;
+  const done = () => {
+    const stat = document.getElementById('pz-fetch-status');
+    if (stat) {
+      stat.style.display = 'block';
+      stat.textContent = '✅ FEN copied! Analysis tab me FEN box me paste karo.';
+      setTimeout(() => { stat.style.display = 'none'; }, 2500);
+    }
+  };
+  // Modern clipboard API (https/localhost) — warna fallback
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(p.fen).then(done).catch(() => _pzCopyFallback(p.fen, done));
+  } else {
+    _pzCopyFallback(p.fen, done);
+  }
+}
+
+function _pzCopyFallback(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); cb && cb(); }
+  catch (e) { alert('Copy fail — FEN: ' + text); }
+  document.body.removeChild(ta);
 }
 
 // ── Fetch / Import / Clear ────────────────────────────────────
