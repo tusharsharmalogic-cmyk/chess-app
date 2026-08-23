@@ -17,6 +17,7 @@ let pzState = {
   timerIv:    null,
   done:       false,
   waitingOpp: false,
+  revealIdx:  null,     // give-up solution navigator position
 };
 
 let pzSelSquare = null;
@@ -44,6 +45,10 @@ function pzEnsureHud() {
       '<button class="btn sm primary" id="pz-btn-next" style="display:none" onclick="pzNextUnsolved()">▶ Next</button>' +
       '<button class="btn sm" onclick="pzGiveUp()">🏳 Give Up</button>' +
       '<button class="btn sm danger" onclick="pzExit()">✖ Exit</button>' +
+    '</div>' +
+    '<div class="btn-row" id="pz-reveal-nav" style="display:none;margin-top:6px">' +
+      '<button class="btn sm" id="pz-btn-reveal-prev" onclick="pzRevealStep(-1)" style="flex:1">◀ Prev</button>' +
+      '<button class="btn sm primary" id="pz-btn-reveal-next" onclick="pzRevealStep(1)" style="flex:1">Next Move ▶</button>' +
     '</div>';
   document.body.appendChild(hud);
 }
@@ -102,6 +107,10 @@ function startPuzzle(p) {
   document.getElementById('bvb-ingame-controls').style.display = 'none';
   document.getElementById('game-over-banner').classList.remove('show');
 
+  // Give-up reveal navigator reset karo
+  const nav = document.getElementById('pz-reveal-nav');
+  if (nav) nav.style.display = 'none';
+
   pzEnsureHud();
   pzPausedAt = null;
   pzState = {
@@ -110,6 +119,7 @@ function startPuzzle(p) {
     solIdx: 1,           // solution[0] is the opponent's setup move
     mistakes: 0, startTime: Date.now(),
     timerIv: null, done: false, waitingOpp: false,
+    revealIdx: null,
   };
 
   // Apply the setup (blunder) move
@@ -147,6 +157,8 @@ function pzExit() {
   pzPausedAt = null;
   const hud = document.getElementById('pz-hud');
   if (hud) hud.style.display = 'none';
+  const nav = document.getElementById('pz-reveal-nav');
+  if (nav) nav.style.display = 'none';
   pzClearTapSelection();
   clearArrows();
   updatePlayBoardVisibility();
@@ -292,6 +304,7 @@ async function pzFinish(solved) {
   const timeMs = await pzRecordResult(solved);
 
   const btnNext = document.getElementById('pz-btn-next');
+  const nav = document.getElementById('pz-reveal-nav');
   if (solved) {
     const earned = pzLastEarned ?? 0;
     if (earned > 0) {
@@ -304,19 +317,53 @@ async function pzFinish(solved) {
         `Pehli baar solve par hi points milte hain • Mistakes: ${pzState.mistakes}`;
     }
   } else {
-    pzHudMsg('❌ Puzzle fail — +0 points. Solution dekho:', '#d46060');
-    // Reveal remaining solution moves one by one
-    let i = pzState.solIdx;
-    const reveal = () => {
-      if (!pzState.active || i >= pzState.puzzle.solution.length) return;
-      pzApplyUci(pzState.puzzle.solution[i]);
-      i++;
-      setTimeout(reveal, 600);
-    };
-    reveal();
+    pzHudMsg('❌ Puzzle fail — +0 points. ◀ ▶ se solution moves dekho:', '#d46060');
+    // Solution navigator — user Prev/Next se ek-ek move aage/peeche dekh sakta hai
+    pzState.revealIdx = pzState.solIdx - 1;   // abhi ki board position tak ke moves lage hue hain
+    if (nav) nav.style.display = '';
+    pzUpdateRevealMsg();
   }
   btnNext.style.display = '';
   pzRefreshUI();
+}
+
+// Give-up ke baad solution navigate karo — dir=+1 next move, -1 previous move
+function pzRevealStep(dir) {
+  if (!pzState.active || !pzState.done || pzState.revealIdx == null) return;
+  const sol = pzState.puzzle.solution;
+  const next = pzState.revealIdx + dir;
+  if (next < pzState.solIdx - 1 || next >= sol.length) return;   // range lock
+  pzState.revealIdx = next;
+
+  // Board ko FEN + solution[0..revealIdx] se rebuild karo — robust prev/next
+  const g = new Chess(pzState.puzzle.fen);
+  for (let i = 0; i <= pzState.revealIdx; i++) {
+    const uci = sol[i];
+    g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci.slice(4) || undefined });
+  }
+  pzState.game = g;
+  pzClearTapSelection();
+  board.position(g.fen());
+
+  if (pzState.revealIdx >= pzState.solIdx) {
+    const hist = g.history({ verbose: true });
+    const last = hist[hist.length - 1];
+    clearArrows();
+    drawArrow(last.from, last.to, 'last');
+  } else {
+    clearArrows();   // starting position — koi reveal move nahi
+  }
+  pzUpdateRevealMsg();
+}
+
+function pzUpdateRevealMsg() {
+  const total = pzState.puzzle.solution.length - pzState.solIdx;
+  const step = Math.max(0, pzState.revealIdx - pzState.solIdx + 1);
+  if (pzState.revealIdx >= pzState.puzzle.solution.length - 1) {
+    pzHudMsg('🏁 Solution complete — ▶ Next se naya puzzle try karo');
+  } else {
+    pzHudMsg(`👀 Solution move ${step} / ${total} — ◀ ▶ se navigate karo`);
+  }
 }
 
 function pzGiveUp() {
@@ -364,6 +411,49 @@ function pzOnPlayTabReturn() {
 
 // ── List & stats UI ───────────────────────────────────────────
 
+// Random unsolved puzzle start karo (🎲 Solve Puzzle button)
+async function pzSolveRandom() {
+  if (!pzList.length) await pzRefreshUI();
+  const unsolved = pzList.filter(p => p.solved !== true);
+  if (!unsolved.length) {
+    alert('Koi unsolved puzzle nahi — pehle 📥 Get Puzzles se fetch ya import karo!');
+    return;
+  }
+  startPuzzle(JSON.parse(JSON.stringify(unsolved[Math.floor(Math.random() * unsolved.length)])));
+}
+
+// Puzzle list collapsible — by default hidden, header tap par open/close
+function pzToggleList(open) {
+  const body  = document.getElementById('pz-list-body');
+  const arrow = document.getElementById('pz-list-arrow');
+  if (!body) return;
+  const willShow = (typeof open === 'boolean') ? open : body.style.display === 'none';
+  body.style.display = willShow ? '' : 'none';
+  if (arrow) arrow.textContent = willShow ? '▾' : '▸';
+}
+
+function pzRowHtml(p) {
+  const tick = p.solved === true ? '✅'
+             : p.solved === false ? '❌' : '⬜';
+  const ptsBadge = (p.solved === true)
+    ? `<span style="font-size:10px;font-weight:700;color:${(p.points_earned??0)>0?'var(--accent2)':'var(--text3)'};white-space:nowrap">+${p.points_earned??0} pts</span>`
+    : '';
+  const meta = [
+    p.rating ? `⭐ ${p.rating}` : '',
+    p.best_time_ms ? `⏱ ${pzFmtMs(p.best_time_ms)}` : '',
+    (p.themes || '').split(',').slice(0, 2).join(', '),
+  ].filter(Boolean).join(' • ');
+  return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">${tick}</span>
+        <span style="flex:1;min-width:0">
+          <span style="font-size:11px;font-weight:600;color:var(--text)">${escHtml(meta)}</span>
+        </span>
+        ${ptsBadge}
+        <button class="btn sm" title="Copy FEN" onclick='pzCopyFen("${p.id}")'>📋 FEN</button>
+        <button class="btn primary sm" onclick='startPuzzleById("${p.id}")'>▶ Solve</button>
+      </div>`;
+}
+
 async function pzRefreshUI() {
   try {
     const res = await fetch(`${FLASK_URL}/puzzles/list`);
@@ -391,35 +481,30 @@ async function pzRefreshUI() {
       avgEl.textContent = '';
     }
 
-    document.getElementById('pz-count-label').textContent = `${pzList.length} puzzles`;
+    const solvedCount = pzList.filter(p => p.solved === true).length;
+    document.getElementById('pz-count-label').textContent = `${solvedCount}/${pzList.length} solved`;
 
-    const body = document.getElementById('pz-list-body');
+    const body   = document.getElementById('pz-list-body');
+    const empty  = document.getElementById('pz-list-empty');
+    const groups = document.getElementById('pz-list-groups');
+    if (!body) return;
+
     if (pzList.length === 0) {
-      body.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">Koi puzzle nahi — upar se fetch ya import karo</div>';
+      if (empty) empty.style.display = '';
+      if (groups) groups.style.display = 'none';
       return;
     }
+    if (empty) empty.style.display = 'none';
+    if (groups) groups.style.display = 'flex';
 
-    body.innerHTML = pzList.map(p => {
-      const tick = p.solved === true ? '✅'
-                 : p.solved === false ? '❌' : '⬜';
-      const ptsBadge = (p.solved === true)
-        ? `<span style="font-size:10px;font-weight:700;color:${(p.points_earned??0)>0?'var(--accent2)':'var(--text3)'};white-space:nowrap">+${p.points_earned??0} pts</span>`
-        : '';
-      const meta = [
-        p.rating ? `⭐ ${p.rating}` : '',
-        p.best_time_ms ? `⏱ ${pzFmtMs(p.best_time_ms)}` : '',
-        (p.themes || '').split(',').slice(0, 2).join(', '),
-      ].filter(Boolean).join(' • ');
-      return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">${tick}</span>
-        <span style="flex:1;min-width:0">
-          <span style="font-size:11px;font-weight:600;color:var(--text)">${escHtml(meta)}</span>
-        </span>
-        ${ptsBadge}
-        <button class="btn sm" title="Copy FEN" onclick='pzCopyFen("${p.id}")'>📋 FEN</button>
-        <button class="btn primary sm" onclick='startPuzzleById("${p.id}")'>▶ Solve</button>
-      </div>`;
-    }).join('');
+    const unsolved = pzList.filter(p => p.solved !== true);
+    const solved   = pzList.filter(p => p.solved === true);
+    document.getElementById('pz-count-unsolved').textContent = unsolved.length;
+    document.getElementById('pz-count-solved').textContent = solved.length;
+    document.getElementById('pz-list-unsolved').innerHTML =
+      unsolved.map(pzRowHtml).join('') || '<div style="font-size:11px;color:var(--text3);text-align:center;padding:6px 0">Sab solved! 🎉</div>';
+    document.getElementById('pz-list-solved').innerHTML =
+      solved.map(pzRowHtml).join('') || '<div style="font-size:11px;color:var(--text3);text-align:center;padding:6px 0">Abhi koi solved nahi</div>';
   } catch (e) {
     console.error('pzRefreshUI failed', e);
   }

@@ -937,6 +937,29 @@
               </div>
             </div>
             <div id="pz-stat-avg" style="font-size:10px;color:var(--text3);text-align:center"></div>
+            <button class="btn primary" style="width:100%;margin-top:6px" onclick="pzSolveRandom()">🎲 Solve Puzzle</button>
+          </div>
+        </div>
+
+        <!-- Puzzle list (collapsed by default — tap to open) -->
+        <div class="play-section">
+          <div class="play-section-header" style="cursor:pointer;user-select:none" onclick="pzToggleList()">
+            <span id="pz-list-arrow">▸</span> 🎯 Puzzle List
+            <span style="float:right;display:flex;gap:10px;align-items:center">
+              <span id="pz-count-label" style="font-size:10px;color:var(--text3)"></span>
+              <span style="font-size:10px;color:var(--danger);cursor:pointer" onclick="event.stopPropagation();pzClearAll()">🗑 Clear All</span>
+            </span>
+          </div>
+          <div class="play-section-body" id="pz-list-body" style="gap:8px;display:none">
+            <div id="pz-list-empty" style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">Koi puzzle nahi — niche "📥 Get Puzzles" se fetch ya import karo</div>
+            <div id="pz-list-groups" style="display:none;flex-direction:column;gap:8px">
+              <!-- Unsolved -->
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">⯼ Unsolved · <span id="pz-count-unsolved">0</span></div>
+              <div id="pz-list-unsolved" style="display:flex;flex-direction:column;gap:6px"></div>
+              <!-- Solved -->
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:4px">✅ Solved · <span id="pz-count-solved">0</span></div>
+              <div id="pz-list-solved" style="display:flex;flex-direction:column;gap:6px"></div>
+            </div>
           </div>
         </div>
 
@@ -960,20 +983,7 @@
           </div>
         </div>
 
-        <!-- Puzzle list -->
-        <div class="play-section">
-          <div class="play-section-header">🎯 Puzzle List
-            <span style="float:right;display:flex;gap:10px;align-items:center">
-              <span id="pz-count-label" style="font-size:10px;color:var(--text3)"></span>
-              <span style="font-size:10px;color:var(--danger);cursor:pointer" onclick="pzClearAll()">🗑 Clear All</span>
-            </span>
-          </div>
-          <div class="play-section-body" id="pz-list-body" style="gap:6px">
-            <div style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">Koi puzzle nahi — upar se fetch ya import karo</div>
-          </div>
-        </div>
-
-      </div><!-- end puzzles page -->
+</div><!-- end puzzles page -->
 
     </div><!-- end tab-play -->
 
