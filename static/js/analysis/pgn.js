@@ -120,7 +120,8 @@
 
   // ── Imported list filter ('all' | 'online') ──────────────────
 
-  let _importedFilter = 'all';
+  let _importedFilter  = 'all';
+  let _onlineSubFilter = 'all'; // 'all' | 'lichess' | 'chess.com'
 
   function impSetFilter(f) {
     _importedFilter = f;
@@ -128,6 +129,23 @@
     const onlBtn = document.getElementById('imp-filter-online');
     if (allBtn) allBtn.classList.toggle('active', f === 'all');
     if (onlBtn) onlBtn.classList.toggle('active', f === 'online');
+    // Show sub-filter row only when 'Online Played' is active
+    const subfilter = document.getElementById('imp-online-subfilter');
+    if (subfilter) subfilter.style.display = f === 'online' ? 'flex' : 'none';
+    renderImportedList();
+  }
+
+  function impSetOnlineSubFilter(val) {
+    _onlineSubFilter = val;
+    ['all', 'lichess', 'chesscom'].forEach(id => {
+      const btn = document.getElementById('imp-sf-' + id);
+      if (btn) btn.classList.remove('active');
+    });
+    const activeId = val === 'chess.com' ? 'imp-sf-chesscom'
+                   : val === 'lichess'   ? 'imp-sf-lichess'
+                   :                       'imp-sf-all';
+    const activeBtn = document.getElementById(activeId);
+    if (activeBtn) activeBtn.classList.add('active');
     renderImportedList();
   }
 
@@ -146,9 +164,14 @@
       return;
     }
 
-    const shown = _importedFilter === 'online'
-      ? _importedGames.filter(g => g.source === 'lichess')
-      : _importedGames;
+    let shown = _importedGames;
+    if (_importedFilter === 'online') {
+      shown = shown.filter(g => g.source === 'lichess' || g.source === 'chess.com');
+      if (_onlineSubFilter === 'lichess')
+        shown = shown.filter(g => g.source === 'lichess');
+      else if (_onlineSubFilter === 'chess.com')
+        shown = shown.filter(g => g.source === 'chess.com');
+    }
 
     if (shown.length === 0) {
       const msg = _importedFilter === 'online'
@@ -202,7 +225,10 @@
 
     const subEl = document.createElement('div');
     subEl.className = 'history-item-sub';
-    const parts = [g.source === 'lichess' ? '🌐 Online' : '📥 Imported'];
+    let sourceLabel = '📥 Imported';
+    if (g.source === 'lichess')   sourceLabel = '🌐 Lichess';
+    if (g.source === 'chess.com') sourceLabel = '♟ Chess.com';
+    const parts = [sourceLabel];
     if (g.event && g.event !== '?' && g.event !== 'Casual Game') parts.push(g.event);
     if (g.date_str) parts.push(_formatImportedDate(g.date_str));
     const tc = _formatTCLabel(g.time_control);
@@ -241,7 +267,7 @@
       lcLink.href = g.site;
       lcLink.target = '_blank';
       lcLink.rel = 'noopener';
-      lcLink.textContent = 'View on Lichess \u2192';
+      lcLink.textContent = g.source === 'chess.com' ? 'View on Chess.com \u2192' : 'View on Lichess \u2192';
       lcLink.style.cssText = 'font-size:9px;color:#4a9eff;text-decoration:none';
       lcLink.onclick = (e) => e.stopPropagation();
       rightCol.appendChild(lcLink);
@@ -287,7 +313,7 @@
       <div><b>Result:</b> ${resultLabel}</div>
       ${(g.white_elo || g.black_elo) ? `<div><b>ELO:</b> ${g.white_elo || '\u2014'} vs ${g.black_elo || '\u2014'}</div>` : ''}
       ${g.event && g.event !== '?' ? `<div><b>Event:</b> ${g.event}</div>` : ''}
-      ${g.site && g.site !== '?' ? `<div><b>Site:</b> ${g.site.indexOf('http') === 0 ? `<a href="${g.site}" target="_blank" rel="noopener" style="color:var(--accent)">View on Lichess \u2192</a>` : g.site}</div>` : ''}
+      ${g.site && g.site !== '?' ? `<div><b>Site:</b> ${g.site.indexOf('http') === 0 ? `<a href="${g.site}" target="_blank" rel="noopener" style="color:var(--accent)">${g.source === 'chess.com' ? 'View on Chess.com \u2192' : 'View on Lichess \u2192'}</a>` : g.site}</div>` : ''}
       <div><b>Date played:</b> ${dateDisp}</div>
       <div><b>Time control:</b> ${tc}</div>
       <div><b>Moves:</b> ${g.move_count ? Math.ceil(g.move_count/2) : '—'}</div>
