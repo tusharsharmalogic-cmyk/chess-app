@@ -18,6 +18,9 @@ tournament_bp = Blueprint("tournament", __name__)
 BASE_DIR = "/sdcard/C"
 DATA_DIR = os.path.join(BASE_DIR, "play_data")
 TOURNAMENT_FILE = os.path.join(DATA_DIR, "tournament.json")
+TOURNEY_HISTORY_FILE = os.path.join(DATA_DIR, "tournament_history.json")
+
+MAX_HISTORY_ENTRIES = 50
 
 
 # ==========================================================================
@@ -47,4 +50,31 @@ def delete_tournament():
             os.remove(TOURNAMENT_FILE)
     except OSError:
         pass
+    return jsonify({"ok": True})
+
+
+# ==========================================================================
+#  TOURNAMENT HISTORY (archive of completed tournaments)
+# ==========================================================================
+
+def _load_tourney_history():
+    data = load_json_file(TOURNEY_HISTORY_FILE)
+    return data if isinstance(data, list) else []
+
+
+@tournament_bp.route("/play/tournament/history", methods=["GET"])
+def get_tournament_history():
+    return jsonify({"history": _load_tourney_history()})
+
+
+@tournament_bp.route("/play/tournament/history", methods=["POST"])
+def add_tournament_history():
+    data = request.get_json(silent=True) or {}
+    entry = data.get("entry")
+    if not isinstance(entry, dict):
+        return jsonify({"error": "entry object required"}), 400
+    hist = _load_tourney_history()
+    hist.append(entry)
+    # Sirf recent tournaments rakho
+    save_json_file(TOURNEY_HISTORY_FILE, hist[-MAX_HISTORY_ENTRIES:])
     return jsonify({"ok": True})

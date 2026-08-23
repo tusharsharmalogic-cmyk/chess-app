@@ -20,7 +20,7 @@ function _userRef() {
   return {
     type: 'user',
     id: 'user',
-    name: ((typeof playerProfile !== 'undefined' && playerProfile && playerProfile.name) ? playerProfile.name : 'You') + ' 🗿',
+    name: ((typeof playerProfile !== 'undefined' && playerProfile && playerProfile.name) ? playerProfile.name : 'You'),
     elo: (typeof playerProfile !== 'undefined' && playerProfile) ? (playerProfile.elo || 1200) : 1200,
   };
 }
@@ -182,6 +182,10 @@ async function _renderSetup(root) {
       <div class="play-section-body" style="text-align:center;padding:18px 10px">
         <div style="font-size:11px;color:var(--text3)">2v2 team battles — coming soon 🚧</div>
       </div>
+    </div>
+
+    <div style="text-align:center;margin-top:4px">
+      <span style="font-size:10px;color:var(--accent);cursor:pointer" onclick="renderTourHistoryView()">📜 Tournament History</span>
     </div>
   `;
 }
@@ -347,6 +351,8 @@ function _renderBracket(root) {
   // Abandon link during active play
   html += `<div style="text-align:center;margin-top:6px">
     <span style="font-size:10px;color:var(--danger);cursor:pointer" onclick="abandonTournament(false)">🗑 Abandon tournament</span>
+    <span style="font-size:10px;color:var(--text3)"> · </span>
+    <span style="font-size:10px;color:var(--accent);cursor:pointer" onclick="renderTourHistoryView()">📜 Tournament History</span>
   </div>`;
 
   root.innerHTML = html;
@@ -365,7 +371,8 @@ function _renderChampion(root) {
       </div>
       <div class="btn-row" style="justify-content:center">
         <button class="btn primary" onclick="abandonTournament(false)">🆕 New Tournament</button>
-        <button class="btn" onclick="renderTournaments()">📋 View Bracket</button>
+        <button class="btn" onclick="tourViewBracket()">📋 View Bracket</button>
+        <button class="btn" onclick="renderTourHistoryView()">📜 History</button>
       </div>
     </div>
     <div class="play-section">
@@ -376,10 +383,21 @@ function _renderChampion(root) {
     </div>`;
 }
 
-// Champion view par "View Bracket" complete bracket dikhane ke liye
+// Champion view se poora bracket dekhne ke liye (back button ke saath)
 function tourViewBracket() {
   const root = document.getElementById('tour-root');
-  if (root) _renderBracket(root);
+  if (!root || !T) return;
+  root.innerHTML = `
+    <div class="play-section" style="text-align:center;padding:14px">
+      <div style="font-size:14px;font-weight:700;color:var(--accent)">🏆 ${T.champion ? escHtmlHtml(T.champion.name) : ''} — Champion</div>
+      <button class="btn sm" style="margin-top:8px" onclick="renderTournaments()">↩ Back</button>
+    </div>
+    ${T.rounds.map((round, ri) => `<div class="play-section">
+      <div class="play-section-header">${_roundLabel(ri)}</div>
+      <div class="play-section-body" style="gap:5px">
+        ${round.map((m, mi) => _matchRowHtml(m, ri, mi, null)).join('')}
+      </div>
+    </div>`).join('')}`;
 }
 
 // ── Match progression core ────────────────────────────────────
@@ -396,6 +414,7 @@ function _recordWinner(roundIdx, matchIdx, side) {
       T.status = 'complete';
       T.champion = winners[0];
       if (winners[0].type === 'bot') T.userEliminated = true;
+      if (!T.archived) { T.archived = true; _archiveTournament(); }
     } else {
       const next = [];
       for (let i = 0; i < winners.length; i += 2) {
@@ -408,6 +427,67 @@ function _recordWinner(roundIdx, matchIdx, side) {
 
   // Track user elimination
   if (side && !_isUserIn(T)) T.userEliminated = true;
+}
+
+// ── Archive completed tournament → history ────────────────────
+
+function _computeTop5(tState) {
+  const st = {};
+  const key = p => p.type + ':' + p.id;
+  tState.rounds.forEach((round, ri) => {
+    round.forEach(m => {
+      [m.p1, m.p2].forEach(p => {
+        if (!st[key(p)]) st[key(p)] = { name: p.name, elo: p.elo, type: p.type, wins: 0, out: ri };
+      });
+      if (m.winner) {
+        const w = m.winner === 'p1' ? m.p1 : m.p2;
+        const l = m.winner === 'p1' ? m.p2 : m.p1;
+        if (st[key(w)]) st[key(w)].wins++;
+        if (st[key(l)]) st[key(l)].out = ri;
+      }
+    });
+  });
+  // Champion sabse door tak pahuncha
+  if (tState.champion && st[tState.champion.type + ':' + tState.champion.id]) {
+    st[tState.champion.type + ':' + tState.champion.id].out = tState.rounds.length;
+  }
+  return Object.values(st)
+    .sort((a, b) => (b.out - a.out) || (b.wins - a.wins))
+    .slice(0, 5);
+}
+
+async function _archiveTournament() {
+  if (!T || T.status !== 'complete') return;
+
+  const matches = [];
+  T.rounds.forEach((round, ri) => {
+    round.forEach(m => {
+      matches.push({
+        round: _roundLabel(ri),
+        p1: m.p1.name,
+        p2: m.p2.name,
+        winner: m.winner ? (m.winner === 'p1' ? m.p1.name : m.p2.name) : null,
+      });
+    });
+  });
+
+  const entry = {
+    id: Date.now(),
+    finishedAt: Date.now(),
+    size: T.size,
+    champion: T.champion ? { name: T.champion.name, type: T.champion.type, elo: T.champion.elo } : null,
+    userWon: !!(T.champion && T.champion.type === 'user'),
+    matches,
+    top5: _computeTop5(T),
+  };
+
+  try {
+    await fetch(`${FLASK_URL}/play/tournament/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry }),
+    });
+  } catch(e) { /* ignore */ }
 }
 
 function _isUserIn(tState) {
@@ -601,6 +681,9 @@ async function tourPlayUserMatch() {
   };
   window.TOURNAMENT_CTX = { roundIdx: cur.roundIdx, matchIdx: cur.matchIdx };
 
+  // Tournaments page ka bracket board ke niche na dikhe
+  _showBoardForPlay();
+
   initPlayBoard();
   showIngameUI();
 
@@ -713,5 +796,73 @@ async function abandonTournament(confirmFirst) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────
+
+// ── Tournament History view ───────────────────────────────────
+
+async function renderTourHistoryView() {
+  const root = document.getElementById('tour-root');
+  if (!root) return;
+  root.innerHTML = '<div class="play-section"><div class="play-section-body" style="text-align:center;padding:30px;color:var(--text3);font-size:12px">Loading…</div></div>';
+
+  let hist = [];
+  try {
+    const res  = await fetch(`${FLASK_URL}/play/tournament/history`);
+    const data = await res.json();
+    hist = data.history || [];
+  } catch(e) { /* empty */ }
+
+  hist = [...hist].reverse(); // newest first
+
+  let listHtml;
+  if (hist.length === 0) {
+    listHtml = `<div class="play-section"><div class="play-section-body" style="text-align:center;padding:30px;color:var(--text3);font-size:12px">
+      Abhi tak koi tournament complete nahi hua 🏁
+    </div></div>`;
+  } else {
+    listHtml = hist.map(h => {
+      const d = new Date(h.finishedAt);
+      const dateStr = isNaN(d) ? '' : d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const champName = h.champion ? h.champion.name : '?';
+      const champIcon = h.userWon ? '👑' : '🏆';
+
+      const top5Rows = (h.top5 || []).map((p, i) => `
+        <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 8px;border-radius:4px;${i === 0 ? 'background:var(--bg2,#222)' : ''}">
+          <span>${['🥇','🥈','🥉','4️⃣','5️⃣'][i] || ''} ${escHtmlHtml(p.name)}${p.type === 'user' ? ' <span style="color:var(--accent)">(You)</span>' : ''}</span>
+          <span style="color:var(--text3)">${p.wins} wins${p.elo ? ` · ~${p.elo}` : ''}</span>
+        </div>`).join('');
+
+      const matchRows = (h.matches || []).map(m => `
+        <div style="display:flex;justify-content:space-between;gap:6px;font-size:10px;padding:2px 0;color:var(--text2)">
+          <span>${escHtmlHtml(m.round)}</span>
+          <span style="flex:1;text-align:right">${escHtmlHtml(m.p1)} vs ${escHtmlHtml(m.p2)} — <b style="color:var(--accent2)">${escHtmlHtml(m.winner || '?')}</b></span>
+        </div>`).join('');
+
+      return `<details class="play-section" style="padding:0">
+        <summary style="padding:10px 14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:600">${champIcon} ${escHtmlHtml(champName)}${h.userWon ? ' — Tum jeete! 🎉' : ''}</span>
+          <span style="font-size:10px;color:var(--text3)">${h.size}P · ${dateStr} ▾</span>
+        </summary>
+        <div style="padding:0 14px 12px;display:flex;flex-direction:column;gap:10px">
+          <div>
+            <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px">TOP 5 PLAYERS</div>
+            ${top5Rows || '<div style="font-size:10px;color:var(--text3)">—</div>'}
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px">MATCHES (${(h.matches || []).length})</div>
+            ${matchRows || '<div style="font-size:10px;color:var(--text3)">—</div>'}
+          </div>
+        </div>
+      </details>`;
+    }).join('');
+  }
+
+  root.innerHTML = `
+    <div class="play-section" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px">
+      <span style="font-size:13px;font-weight:700">📜 Tournament History</span>
+      <button class="btn sm" onclick="renderTournaments()">↩ Back</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">${listHtml}</div>
+  `;
+}
 
 document.addEventListener('DOMContentLoaded', () => setTimeout(tourInit, 300));
