@@ -702,6 +702,12 @@ async function tourOnBvbGameOver() {
     winnerSide = loserColorIsWhite
       ? (ctx.w === m.p1 ? 'p2' : 'p1')
       : (ctx.b === m.p1 ? 'p2' : 'p1');
+  } else if (!bvbGame.game_over()) {
+    // Time-out — position se game khatam nahi hua, toh jiski chaal thi
+    // uska clock zero hua hai → wahi haara.
+    const loserIsWhite = bvbGame.turn() === 'w';
+    const loserP = loserIsWhite ? ctx.w : ctx.b;
+    winnerSide = loserP === m.p1 ? 'p2' : 'p1';
   }
 
   if (!winnerSide) {

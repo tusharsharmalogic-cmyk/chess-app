@@ -50,6 +50,14 @@
     if (_currentTab && typeof boardFlipped !== 'undefined') {
       _flipMemory[_currentTab] = boardFlipped;
     }
+
+    // ── Tournament bot-match: tab switch par auto-pause ───────
+    // Warna background mein moves chalte rehte hain aur personality
+    // bubbles dusre tabs mein bhi dikhte hain.
+    if (name !== 'play' && typeof bvbState !== 'undefined' &&
+        bvbState && bvbState.active && !bvbState.paused && window._tourBvbCtx) {
+      try { bvbPauseResume(); } catch(e) {}
+    }
     const _wantFlip = _flipMemory[name] ?? false;
     if (_wantFlip !== boardFlipped) {
       board.flip();
@@ -108,6 +116,10 @@
         board.position(playGame.fen());
       }
       onPlayTabOpen();
+      // Tournament bot-match wapas auto-resume
+      if (typeof bvbState !== 'undefined' && bvbState && bvbState.active && bvbState.paused && window._tourBvbCtx) {
+        try { bvbPauseResume(); } catch(e) {}
+      }
       if (playState.active) document.getElementById('copy-pgn-btn').classList.add('show');
       updatePlayBoardVisibility();
     } else if (name === 'review') {
