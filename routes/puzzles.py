@@ -199,7 +199,7 @@ def record_result():
         return jsonify({"error": "Puzzle not found"}), 404
 
     stats      = data["stats"]
-    first_solve = solved and puzzle.get("solved") is not True
+    first_solve = solved and puzzle.get("solved") is None
     earned     = 0
 
     puzzle["attempts"] = int(puzzle.get("attempts") or 0) + 1
