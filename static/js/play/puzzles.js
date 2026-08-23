@@ -499,7 +499,7 @@ function pzRowHtml(p) {
           <span style="font-size:11px;font-weight:600;color:var(--text)">${escHtml(meta)}</span>
         </span>
         ${ptsBadge}
-        <button class="btn sm" title="Copy FEN" onclick='pzCopyFen("${p.id}")'>📋 FEN</button>
+        <button class="btn sm" title="Copy PGN" onclick='pzCopyPgn("${p.id}")'>📋 PGN</button>
         <button class="btn primary sm" onclick='startPuzzleById("${p.id}")'>▶ Solve</button>
       </div>`;
 }
@@ -566,23 +566,31 @@ function startPuzzleById(id) {
   if (p) startPuzzle(JSON.parse(JSON.stringify(p)));   // deep copy — original stays untouched
 }
 
-// Puzzle ki FEN copy karo — Analysis tab me paste karke khud analyse karo
-function pzCopyFen(id) {
+// Puzzle position ki PGN copy karo — FEN header + whose turn it is
+function pzCopyPgn(id) {
   const p = pzList.find(x => x.id === id);
   if (!p || !p.fen) return;
+  const sideToMove = p.fen.includes(' w ') ? 'White' : 'Black';
+  const pgn = [
+    '[FEN "' + p.fen + '"]',
+    '[SetUp "1"]',
+    '[Puzzle "' + (p.id || '') + '"]',
+    '[Result "*"]',
+    '',
+    sideToMove + ' to move *',
+  ].join('\n');
   const done = () => {
     const stat = document.getElementById('pz-fetch-status');
     if (stat) {
       stat.style.display = 'block';
-      stat.textContent = '✅ FEN copied! Analysis tab me FEN box me paste karo.';
+      stat.textContent = '✅ PGN copied! Analysis/Review tab me paste karo.';
       setTimeout(() => { stat.style.display = 'none'; }, 2500);
     }
   };
-  // Modern clipboard API (https/localhost) — warna fallback
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(p.fen).then(done).catch(() => _pzCopyFallback(p.fen, done));
+    navigator.clipboard.writeText(pgn).then(done).catch(() => _pzCopyFallback(pgn, done));
   } else {
-    _pzCopyFallback(p.fen, done);
+    _pzCopyFallback(pgn, done);
   }
 }
 
