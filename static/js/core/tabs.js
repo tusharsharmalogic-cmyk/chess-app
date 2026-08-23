@@ -398,6 +398,7 @@
         playerProfile = data.player;
         document.getElementById('player-name').value = playerProfile.name || 'Player';
         document.getElementById('player-elo').value  = playerProfile.elo  ?? 1200;
+        document.getElementById('player-other-names').value = (playerProfile.other_names || []).join(', ');
         document.getElementById('player-games-played').textContent = playerProfile.games_played ?? 0;
         updateEloChip();
       }
@@ -411,6 +412,10 @@
     const body = {};
     if (name) body.name = name;
     if (!isNaN(eloVal)) body.elo = eloVal;
+    const otherRaw = document.getElementById('player-other-names');
+    if (otherRaw) {
+      body.other_names = otherRaw.value.split(',').map(s => s.trim()).filter(Boolean);
+    }
 
     try {
       const res = await fetch(`${FLASK_URL}/play/player`, {
@@ -423,6 +428,7 @@
         playerProfile = data.player;
         document.getElementById('player-name').value = playerProfile.name;
         document.getElementById('player-elo').value  = playerProfile.elo;
+        document.getElementById('player-other-names').value = (playerProfile.other_names || []).join(', ');
         document.getElementById('player-games-played').textContent = playerProfile.games_played ?? 0;
         updateEloChip();
       }

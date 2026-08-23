@@ -240,11 +240,17 @@
     left.appendChild(subEl);
 
     const resultEl = document.createElement('div');
-    const myName = (playerProfile && playerProfile.name) ? playerProfile.name.trim().toLowerCase() : '';
+    // Match against main name + all "Other Names" (Lichess/Chess.com usernames)
+    const _myNames = new Set();
+    if (playerProfile && playerProfile.name && playerProfile.name.trim())
+      _myNames.add(playerProfile.name.trim().toLowerCase());
+    (playerProfile && playerProfile.other_names || []).forEach(n => {
+      if (n && n.trim()) _myNames.add(n.trim().toLowerCase());
+    });
     const wName  = (g.white_name || '').trim().toLowerCase();
     const bName  = (g.black_name || '').trim().toLowerCase();
-    const iAmWhite = myName && wName === myName;
-    const iAmBlack = myName && bName === myName;
+    const iAmWhite = wName && _myNames.has(wName);
+    const iAmBlack = bName && _myNames.has(bName);
     const iAmPlaying = iAmWhite || iAmBlack;
     let cls = 'draw', label = g.result || '*';
     if (g.result === '1/2-1/2') { cls = 'draw'; label = '½-½'; }

@@ -298,6 +298,18 @@ def set_player():
         except (ValueError, TypeError):
             pass
 
+    if "other_names" in data:
+        raw = data.get("other_names")
+        if isinstance(raw, str):
+            raw = raw.split(",")
+        if isinstance(raw, list):
+            names = []
+            for n in raw:
+                n = str(n).strip()[:40]
+                if n and n not in names:
+                    names.append(n)
+            player["other_names"] = names[:20]
+
     if "games_played" in data:
         try:
             player["games_played"] = max(0, int(data.get("games_played")))
