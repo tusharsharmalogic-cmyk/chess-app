@@ -14,7 +14,6 @@ BASE_DIR = "/sdcard/C"
 DATA_DIR = os.path.join(BASE_DIR, "play_data")
 IMPORTED_FILE = os.path.join(DATA_DIR, "imported_games.json")
 LICHESS_PULL_FILE = os.path.join(DATA_DIR, "lichess_pull.json")
-IMPORTED_MAX = 500
 
 
 def load_imported():
@@ -151,8 +150,6 @@ def pull_games():
         saved_count += 1
 
     existing.extend(new_records)
-    if len(existing) > IMPORTED_MAX:
-        existing = existing[-IMPORTED_MAX:]
     save_imported(existing)
 
     state["last_pulled"] = time.strftime("%Y-%m-%dT%H:%M:%S")

@@ -17,7 +17,6 @@ imported_bp = Blueprint("imported", __name__)
 BASE_DIR = "/sdcard/C"
 DATA_DIR = os.path.join(BASE_DIR, "play_data")
 IMPORTED_GAMES_FILE = os.path.join(DATA_DIR, "imported_games.json")
-IMPORTED_MAX = 500
 
 
 # ── Persistence ───────────────────────────────────────────────────────────────
@@ -81,9 +80,6 @@ def add_imported_games():
         }
         games.append(record)
         saved.append(record)
-
-    if len(games) > IMPORTED_MAX:
-        games = games[-IMPORTED_MAX:]
 
     save_imported_games(games)
     return jsonify({"ok": True, "saved": len(saved), "games": saved})
