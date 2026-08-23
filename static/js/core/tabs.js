@@ -244,7 +244,7 @@
   }
 
   function playSubSwitch(page) {
-    ['makebot','playbot','botvsbot','history','puzzles'].forEach(p => {
+    ['makebot','playbot','botvsbot','tournaments','history','puzzles'].forEach(p => {
       const sb = document.getElementById('sb-' + p);
       const pg = document.getElementById('play-page-' + p);
       if (sb) sb.classList.toggle('active', p === page);
