@@ -432,6 +432,56 @@ function pzToggleList(open) {
   if (arrow) arrow.textContent = willShow ? '▾' : '▸';
 }
 
+// Daily history collapsible — last 30 days, hidden by default
+let pzDailyStats = {};   // cache from pzRefreshUI
+
+function pzToggleDaily(open) {
+  const body  = document.getElementById('pz-daily-body');
+  const arrow = document.getElementById('pz-daily-arrow');
+  if (!body) return;
+  const willShow = (typeof open === 'boolean') ? open : body.style.display === 'none';
+  body.style.display = willShow ? '' : 'none';
+  if (arrow) arrow.textContent = willShow ? '▾' : '▸';
+  if (willShow) pzRenderDaily();
+}
+
+function pzRenderDaily() {
+  const list  = document.getElementById('pz-daily-list');
+  const summ  = document.getElementById('pz-daily-summary');
+  if (!list) return;
+
+  // Last 30 days me se sirf woh dikhao jisme data hai
+  const today = new Date();
+  const days = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const info = pzDailyStats[key];
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const isToday = i === 0;
+    days.push({ key, dayName, isToday, pts: info?.points ?? 0, solved: info?.solved ?? 0 });
+  }
+
+  // Summary line
+  const activeDays = days.filter(d => d.pts > 0 || d.solved > 0).length;
+  const totalPts   = days.reduce((s, d) => s + d.pts, 0);
+  if (summ) summ.textContent = activeDays > 0 ? `${activeDays} days active · ${totalPts} pts` : '';
+
+  // Rows
+  list.innerHTML = days.map(d => {
+    const bg    = d.isToday ? 'background:rgba(196,163,90,0.08);border-color:rgba(196,163,90,0.3)' : '';
+    const label = d.isToday ? d.dayName + ' (Today)' : d.dayName;
+    const has   = d.pts > 0 || d.solved > 0;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:11px;${bg}">
+      <span style="flex:1;color:${has ? 'var(--text)' : 'var(--text3)'}">${label}</span>
+      <span style="color:var(--text3)">${d.solved > 0 ? d.solved + ' solve' + (d.solved > 1 ? 's' : '') : '—'}</span>
+      <span style="color:${d.pts > 0 ? 'var(--accent2)' : 'var(--text3)'};font-weight:600;min-width:36px;text-align:right">${d.pts > 0 ? d.pts + ' pts' : '0'}</span>
+    </div>`;
+  }).join('');
+}
+
+
 function pzRowHtml(p) {
   const tick = p.solved === true ? '✅'
              : p.solved === false ? '❌' : '⬜';
@@ -462,6 +512,7 @@ async function pzRefreshUI() {
     const st = data.stats || {};
 
     document.getElementById('pz-stat-points').textContent = st.total_points ?? 0;
+    pzDailyStats = st.daily || {};
 
     const todayEl = document.getElementById('pz-stat-today');
     if (todayEl) {

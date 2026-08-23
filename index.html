@@ -250,8 +250,8 @@
         <div class="play-subbtn active" id="sb-makebot" onclick="playSubSwitch('makebot')">⚙ Make Bot</div>
         <div class="play-subbtn" id="sb-playbot" onclick="playSubSwitch('playbot')">♟ Play Bot</div>
         <div class="play-subbtn" id="sb-botvsbot" onclick="playSubSwitch('botvsbot')">⚔ Bot vs Bot</div>
-        <div class="play-subbtn" id="sb-history" onclick="playSubSwitch('history')">📜 History</div>
         <div class="play-subbtn" id="sb-puzzles" onclick="playSubSwitch('puzzles')">🧩 Puzzle</div>
+        <div class="play-subbtn" id="sb-history" onclick="playSubSwitch('history')">📜 History</div>
       </div>
 
       <!-- ── PAGE: Make a Bot ───────────────────────── -->
@@ -938,6 +938,17 @@
             </div>
             <div id="pz-stat-avg" style="font-size:10px;color:var(--text3);text-align:center"></div>
             <button class="btn primary" style="width:100%;margin-top:6px" onclick="pzSolveRandom()">🎲 Solve Puzzle</button>
+          </div>
+        </div>
+
+                <!-- Daily History (last 30 days, collapsed by default) -->
+        <div class="play-section">
+          <div class="play-section-header" style="cursor:pointer;user-select:none" onclick="pzToggleDaily()">
+            <span id="pz-daily-arrow">▸</span> 📅 Daily History
+            <span style="font-size:10px;color:var(--text3);float:right" id="pz-daily-summary"></span>
+          </div>
+          <div class="play-section-body" id="pz-daily-body" style="display:none;gap:4px">
+            <div id="pz-daily-list" style="display:flex;flex-direction:column;gap:4px"></div>
           </div>
         </div>
 
