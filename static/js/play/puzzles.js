@@ -577,7 +577,7 @@ function pzCopyPgn(id) {
     '[Puzzle "' + (p.id || '') + '"]',
     '[Result "*"]',
     '',
-    sideToMove + ' to move *',
+    '*',
   ].join('\n');
   const done = () => {
     const stat = document.getElementById('pz-fetch-status');
