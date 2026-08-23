@@ -547,6 +547,8 @@ function startBvbClock() {
         document.getElementById('bvb-game-over-reason').textContent = whiteBotName + ' ran out of time';
         document.getElementById('bvb-game-over-banner').style.display = 'flex';
         if (bvbGame.history().length > 0) saveBvbGameToHistory(timeTitle, whiteBotName + ' ran out of time', whiteBotName, blackBotName, '0-1');
+        // Tournament hook
+        if (window.tourOnBvbGameOver) { try { tourOnBvbGameOver(); } catch(e) {} }
         return;
       }
     } else {
@@ -562,6 +564,8 @@ function startBvbClock() {
         document.getElementById('bvb-game-over-reason').textContent = blackBotName + ' ran out of time';
         document.getElementById('bvb-game-over-banner').style.display = 'flex';
         if (bvbGame.history().length > 0) saveBvbGameToHistory(timeTitle, blackBotName + ' ran out of time', whiteBotName, blackBotName, '1-0');
+        // Tournament hook
+        if (window.tourOnBvbGameOver) { try { tourOnBvbGameOver(); } catch(e) {} }
         return;
       }
     }

@@ -173,6 +173,34 @@ async function _renderSetup(root) {
             style="width:80px;background:var(--bg2,#222);border:1px solid var(--border,#444);border-radius:6px;padding:4px 8px;color:var(--text1)">
         </div>
 
+        <div style="border-top:1px solid var(--border,#333);padding-top:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:8px">♟ YOUR MATCH SETTINGS</div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1)">
+            <input type="checkbox" id="tour-user-time-on" ${s.userTimeOn ? 'checked' : ''}>
+            ⏱ Time control — <input type="number" id="tour-user-time-min" value="${s.userMinutes || 10}" min="1" max="180" style="width:60px;background:var(--bg2,#222);border:1px solid var(--border,#444);border-radius:6px;padding:3px 6px;color:var(--text1)"> min
+          </label>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11px;color:var(--text1)">
+            <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="tour-feat-undo" ${s.featUndo !== false ? 'checked' : ''}>↩ Undo</label>
+            <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="tour-feat-hint" ${s.featHint !== false ? 'checked' : ''}>💡 Hint</label>
+            <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="tour-feat-evalbar" ${s.featEvalbar ? 'checked' : ''}>📊 Eval</label>
+            <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="tour-feat-threat" ${s.featThreat ? 'checked' : ''}>⚠ Threat</label>
+            <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="tour-feat-suggestion" ${s.featSuggestion !== false ? 'checked' : ''}>➡ Suggestion</label>
+          </div>
+          <textarea class="play-input" id="tour-user-start-pgn" placeholder="Your matches starting PGN (empty = normal start)" style="min-height:44px;resize:vertical;margin-top:8px;font-size:11px">${s.userStartPgn || ''}</textarea>
+        </div>
+
+        <div style="border-top:1px solid var(--border,#333);padding-top:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:8px">⚔ BOT MATCH SETTINGS</div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1)">
+            <input type="checkbox" id="tour-bvb-time-on" ${s.bvbTimeOn ? 'checked' : ''}>
+            ⏱ Time control — <input type="number" id="tour-bvb-time-min" value="${s.bvbMinutes || 5}" min="1" max="180" style="width:60px;background:var(--bg2,#222);border:1px solid var(--border,#444);border-radius:6px;padding:3px 6px;color:var(--text1)"> min
+          </label>
+          <div style="font-size:11px;color:var(--text2);margin-top:8px">Move delay: <b id="tour-bvb-delay-label">${s.bvbDelay ?? 500}</b>ms</div>
+          <input type="range" min="100" max="3000" step="50" value="${s.bvbDelay ?? 500}" id="tour-bvb-delay"
+            oninput="document.getElementById('tour-bvb-delay-label').textContent=this.value" style="width:100%">
+          <textarea class="play-input" id="tour-bvb-start-pgn" placeholder="Bot matches starting PGN (empty = normal start)" style="min-height:44px;resize:vertical;margin-top:8px;font-size:11px">${s.bvbStartPgn || ''}</textarea>
+        </div>
+
         <button class="btn primary" onclick="startTournament()">🚀 Generate Tournament</button>
       </div>
     </div>
@@ -225,6 +253,21 @@ async function startTournament() {
   const eloTarget = parseInt(document.getElementById('tour-elo-target')?.value) ||
     ((typeof playerProfile !== 'undefined' && playerProfile) ? playerProfile.elo : 1200);
 
+  const matchSettings = {
+    userTimeOn:   !!document.getElementById('tour-user-time-on')?.checked,
+    userMinutes:  Math.max(1, Math.min(180, parseInt(document.getElementById('tour-user-time-min')?.value) || 10)),
+    userStartPgn: (document.getElementById('tour-user-start-pgn')?.value || '').trim(),
+    featUndo:       !!document.getElementById('tour-feat-undo')?.checked,
+    featHint:       !!document.getElementById('tour-feat-hint')?.checked,
+    featEvalbar:    !!document.getElementById('tour-feat-evalbar')?.checked,
+    featThreat:     !!document.getElementById('tour-feat-threat')?.checked,
+    featSuggestion: !!document.getElementById('tour-feat-suggestion')?.checked,
+    bvbTimeOn:   !!document.getElementById('tour-bvb-time-on')?.checked,
+    bvbMinutes:  Math.max(1, Math.min(180, parseInt(document.getElementById('tour-bvb-time-min')?.value) || 5)),
+    bvbDelay:    Math.max(100, parseInt(document.getElementById('tour-bvb-delay')?.value) || 500),
+    bvbStartPgn: (document.getElementById('tour-bvb-start-pgn')?.value || '').trim(),
+  };
+
   let chosenBots;
   if (customOn) {
     const ids = [...document.querySelectorAll('.tour-bot-check:checked')].map(el => el.value);
@@ -259,7 +302,7 @@ async function startTournament() {
   T = {
     status: 'active',
     size,
-    settings: { size, customSelect: !!customOn, chosenBotIds: customOn ? chosenBots.map(b => b.id) : [], eloRangeOn: !!eloRangeOn, eloTarget },
+    settings: { size, customSelect: !!customOn, chosenBotIds: customOn ? chosenBots.map(b => b.id) : [], eloRangeOn: !!eloRangeOn, eloTarget, ...matchSettings },
     rounds: [firstRound],
     roundIdx: 0,
     watching: false,
@@ -577,19 +620,44 @@ async function tourStartBotMatch(nxt) {
   const wBot = tourBots.find(b => b.id === wP.id) || null;
   const bBot = tourBots.find(b => b.id === bP.id) || null;
 
+  // Tournament bot-match settings (setup panel se)
+  const BS = T.settings || {};
+  const bvbTimeOn = !!BS.bvbTimeOn;
+  const bvbMins   = Math.max(1, Math.min(180, parseInt(BS.bvbMinutes) || 5));
+  const bvbTimeMs = bvbTimeOn ? bvbMins * 60000 : 0;
+  const bvbDelay  = Math.max(100, parseInt(BS.bvbDelay) || 500);
+
   bvbGame = new Chess();
+  let tOpeningLocked = null;
+  const tStartPgn = (BS.bvbStartPgn || '').trim();
+  if (tStartPgn) {
+    if (bvbGame.load_pgn(tStartPgn)) {
+      try {
+        const obRes = await fetch(`${FLASK_URL}/play/check-opening`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fen: bvbGame.fen() })
+        });
+        tOpeningLocked = !!(await obRes.json()).is_opening;
+      } catch(e) { tOpeningLocked = false; }
+    } else {
+      alert('Invalid starting PGN! Normal start se khel rahe hain.');
+      bvbGame = new Chess();
+    }
+  }
+
   clearArrows();
-  board.position('start');
+  board.position(bvbGame.fen());
   if (boardFlipped) { board.flip(); boardFlipped = false; }
 
   bvbState = {
     active: true, paused: false,
     whiteBotId: wP.id, blackBotId: bP.id,
-    whiteMs: 0, blackMs: 0,
-    timeControl: false, delay: 450,
+    whiteMs: bvbTimeMs, blackMs: bvbTimeMs,
+    timeControl: bvbTimeOn, delay: bvbDelay,
     clockInterval: null,
     moveLog: [], _turnStartedAt: Date.now(), _pausedAccum: 0,
-    openingLocked: null,
+    openingLocked: tOpeningLocked,
   };
   window._tourBvbCtx = { roundIdx, matchIdx, w: wP, b: bP };
 
@@ -604,11 +672,12 @@ async function tourStartBotMatch(nxt) {
   document.getElementById('clock-bot-label').textContent    = '♟ ' + bP.name;
   document.getElementById('clock-top-row').classList.add('show');
   document.getElementById('clock-bottom-row').classList.add('show');
-  document.getElementById('clock-bot-time').style.display    = 'none';
-  document.getElementById('clock-player-time').style.display = 'none';
+  document.getElementById('clock-bot-time').style.display    = bvbTimeOn ? '' : 'none';
+  document.getElementById('clock-player-time').style.display = bvbTimeOn ? '' : 'none';
   document.getElementById('bot-dialogue-bubble-bottom').style.display = 'none';
   updateBvbCapturedDisplay();
   updateBvbTurnDot('w');
+  if (bvbTimeOn) { updateBvbClocks(); startBvbClock(); }
 
   hideAllDialogueBubbles();
   bvbWhiteEngine.reset(wBot, bvbGame.fen(), { position: 'bottom', fixedColor: 'w', botLabel: wP.name });
@@ -664,15 +733,27 @@ async function tourPlayUserMatch() {
   const opp = match.p1.type === 'user' ? match.p2 : match.p1;
   const playerColor = Math.random() < 0.5 ? 'w' : 'b';
 
+  // Tournament match settings (setup panel se)
+  const US = T.settings || {};
+  const userTimeOn = !!US.userTimeOn;
+  const userMins   = Math.max(1, Math.min(180, parseInt(US.userMinutes) || 10));
+  const timeMs     = userTimeOn ? userMins * 60000 : 0;
+
   playState = {
     active: true,
     botId: opp.id,
     botName: opp.name,
     playerColor,
-    timeControl: false,
-    timeMinutes: 10,
-    playerMs: 0, botMs: 0,
-    features: { undo: false, hint: false, evalbar: false, threat: false, suggestion: false },
+    timeControl: userTimeOn,
+    timeMinutes: userMins,
+    playerMs: timeMs, botMs: timeMs,
+    features: {
+      undo:       US.featUndo !== false,
+      hint:       US.featHint !== false,
+      evalbar:    !!US.featEvalbar,
+      threat:     !!US.featThreat,
+      suggestion: US.featSuggestion !== false,
+    },
     pgn: '', fen: TOUR_START_FEN, startFen: TOUR_START_FEN,
     status: 'playing', result: null,
     moveLog: [],
@@ -693,6 +774,33 @@ async function tourPlayUserMatch() {
     tourBots = (await res.json()).bots || [];
   } catch(e) { /* keep cache */ }
   const oppBot = tourBots.find(b => b.id === opp.id) || null;
+
+  // Optional starting PGN (same logic as Play vs Bot)
+  const userPgn = (US.userStartPgn || '').trim();
+  if (userPgn) {
+    if (playGame.load_pgn(userPgn)) {
+      const tmpG = new Chess();
+      tmpG.load_pgn(userPgn);
+      const phist = tmpG.history({ verbose: true });
+      for (let i = 0; i < phist.length; i++) tmpG.undo();
+      playState.startFen = tmpG.fen();
+      playState.fen = playGame.fen();
+      board.position(playGame.fen());
+      updateCapturedDisplay();
+      updateFENDisplay();
+      try {
+        const obRes = await fetch(`${FLASK_URL}/play/check-opening`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fen: playGame.fen() })
+        });
+        playState.openingLocked = !!(await obRes.json()).is_opening;
+      } catch(e) { playState.openingLocked = false; }
+    } else {
+      alert('Invalid starting PGN! Normal start se khel rahe ho.');
+    }
+  }
+
   personalityEngine.reset(oppBot, playGame.fen(), { position: 'top', botLabel: opp.name });
   if (oppBot && oppBot.personality) personalityEngine.onGameStart(playGame, playGame.fen());
 
@@ -839,7 +947,10 @@ async function renderTourHistoryView() {
 
       return `<details class="play-section" style="padding:0">
         <summary style="padding:10px 14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:12px;font-weight:600">${champIcon} ${escHtmlHtml(champName)}${h.userWon ? ' — Tum jeete! 🎉' : ''}</span>
+          <span style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px">
+            <input type="checkbox" class="tour-hist-check" value="${h.id}" onclick="event.stopPropagation()">
+            ${champIcon} ${escHtmlHtml(champName)}${h.userWon ? ' — Tum jeete! 🎉' : ''}
+          </span>
           <span style="font-size:10px;color:var(--text3)">${h.size}P · ${dateStr} ▾</span>
         </summary>
         <div style="padding:0 14px 12px;display:flex;flex-direction:column;gap:10px">
@@ -861,8 +972,37 @@ async function renderTourHistoryView() {
       <span style="font-size:13px;font-weight:700">📜 Tournament History</span>
       <button class="btn sm" onclick="renderTournaments()">↩ Back</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">${listHtml}</div>
+    <div class="btn-row" style="margin-top:10px;justify-content:flex-end">
+      <span id="tour-hist-sel-count" style="font-size:10px;color:var(--text3);align-self:center">0 selected</span>
+      <button class="btn danger sm" onclick="tourDeleteHistory()">🗑 Delete Selected</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">${listHtml}</div>
   `;
+
+  // Selection count updater
+  root.querySelectorAll('.tour-hist-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const n = root.querySelectorAll('.tour-hist-check:checked').length;
+      const el = document.getElementById('tour-hist-sel-count');
+      if (el) el.textContent = `${n} selected`;
+    });
+  });
+}
+
+async function tourDeleteHistory() {
+  const root = document.getElementById('tour-root');
+  if (!root) return;
+  const ids = [...root.querySelectorAll('.tour-hist-check:checked')].map(cb => Number(cb.value));
+  if (ids.length === 0) { alert('Pehle delete karne ke liye tournaments select karo!'); return; }
+  if (!confirm(`${ids.length} tournament${ids.length > 1 ? 's' : ''} history se delete karein?`)) return;
+  try {
+    await fetch(`${FLASK_URL}/play/tournament/history/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+  } catch(e) { /* ignore */ }
+  renderTourHistoryView();
 }
 
 document.addEventListener('DOMContentLoaded', () => setTimeout(tourInit, 300));

@@ -9,6 +9,7 @@
   // so that switching to Review (or Play) and back never corrupts the
   // Analysis position.
   let _analysisBoardSnapshot = null;
+  const _flipMemory = {};   // tab name -> boardFlipped (per-tab board orientation)
 
   function _saveAnalysisSnapshot() {
     _analysisBoardSnapshot = {
@@ -43,6 +44,18 @@
 
   function switchTab(name) {
     if (setupMode && name !== 'analysis') setupCancel();
+
+    // ── Per-tab board flip memory ──────────────────────────────
+    // Ek tab ka flip dusre tab ke board ko affect na kare.
+    if (_currentTab && typeof boardFlipped !== 'undefined') {
+      _flipMemory[_currentTab] = boardFlipped;
+    }
+    const _wantFlip = _flipMemory[name] ?? false;
+    if (_wantFlip !== boardFlipped) {
+      board.flip();
+      boardFlipped = _wantFlip;
+      setTimeout(attachBoardTapHandlers, 80);
+    }
 
     // Save Analysis snapshot whenever we leave the Analysis/PGN/FEN tabs
     // (ye teeno ek hi Analysis board share karte hain)

@@ -67,6 +67,18 @@ def get_tournament_history():
     return jsonify({"history": _load_tourney_history()})
 
 
+@tournament_bp.route("/play/tournament/history/delete", methods=["POST"])
+def delete_tournament_history():
+    data = request.get_json(silent=True) or {}
+    ids = data.get("ids")
+    if not isinstance(ids, list):
+        return jsonify({"error": "ids list required"}), 400
+    id_set = set(ids)
+    hist = [h for h in _load_tourney_history() if h.get("id") not in id_set]
+    save_json_file(TOURNEY_HISTORY_FILE, hist)
+    return jsonify({"ok": True, "remaining": len(hist)})
+
+
 @tournament_bp.route("/play/tournament/history", methods=["POST"])
 def add_tournament_history():
     data = request.get_json(silent=True) or {}
