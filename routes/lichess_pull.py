@@ -38,12 +38,19 @@ def save_pull_state(state):
 def save_username():
     data = request.get_json(force=True, silent=True) or {}
     username = (data.get("username") or "").strip()
-    if not username:
-        return jsonify({"ok": False, "error": "Username required"}), 400
     state = load_pull_state()
-    state["username"] = username
+    if username:
+        state["username"] = username
+    if "max_games" in data:
+        try:
+            state["max_games"] = max(0, min(int(data.get("max_games") or 0), 1000))
+        except (TypeError, ValueError):
+            state["max_games"] = 50
+    if not username and "max_games" not in data:
+        return jsonify({"ok": False, "error": "Username required"}), 400
     save_pull_state(state)
-    return jsonify({"ok": True, "username": username})
+    return jsonify({"ok": True, "username": state.get("username", ""),
+                    "max_games": state.get("max_games", 50)})
 
 
 @lichess_pull_bp.route("/lichess/username", methods=["GET"])
@@ -53,6 +60,7 @@ def get_username():
         "username":    state.get("username", ""),
         "last_pulled": state.get("last_pulled", ""),
         "last_count":  state.get("last_count", 0),
+        "max_games":   state.get("max_games", 50),
     })
 
 
@@ -63,16 +71,25 @@ def pull_games():
     Saves into imported_games.json with source="lichess".
     Duplicate check via fingerprint (first 200 chars of PGN).
     """
-    state = load_pull_state()
-    username = (request.get_json(force=True, silent=True) or {}).get("username") or state.get("username", "")
+    state    = load_pull_state()
+    body     = request.get_json(force=True, silent=True) or {}
+    username = ((body.get("username") or state.get("username", "")) or "").strip()
     if not username:
         return jsonify({"ok": False, "error": "Username not set"}), 400
+
+    # Max games to import (user-settable, default 50, hard cap 1000)
+    try:
+        max_games = int(body.get("max_games") or state.get("max_games") or 50)
+    except (TypeError, ValueError):
+        max_games = 50
+    max_games = max(1, min(max_games, 1000))
+    state["max_games"] = max_games
 
     # Update username in state
     state["username"] = username
 
-    # Fetch from Lichess — plain PGN format, max 50 games
-    url = f"https://lichess.org/api/games/user/{urllib.parse.quote(username)}?max=50&clocks=true&opening=true&perfType=bullet,blitz,rapid,classical"
+    # Fetch from Lichess — plain PGN format
+    url = f"https://lichess.org/api/games/user/{urllib.parse.quote(username)}?max={max_games}&clocks=true&opening=true&perfType=bullet,blitz,rapid,classical"
     try:
         req = urllib.request.Request(url, headers={
             "Accept": "application/x-chess-pgn",
@@ -107,6 +124,10 @@ def pull_games():
         chunk = chunk.strip()
         if not chunk or not chunk.startswith("["):
             continue
+
+        # Stop once we have saved enough new games
+        if len(new_records) >= max_games:
+            break
 
         fingerprint = chunk[:200]
         if fingerprint in existing_fingerprints:

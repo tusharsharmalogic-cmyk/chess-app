@@ -39,12 +39,19 @@ def save_state(state):
 def save_username():
     data = request.get_json(force=True, silent=True) or {}
     username = (data.get("username") or "").strip()
-    if not username:
-        return jsonify({"ok": False, "error": "Username required"}), 400
     state = load_state()
-    state["username"] = username
+    if username:
+        state["username"] = username
+    if "max_games" in data:
+        try:
+            state["max_games"] = max(0, int(data.get("max_games") or 0))
+        except (TypeError, ValueError):
+            state["max_games"] = 0
+    if not username and "max_games" not in data:
+        return jsonify({"ok": False, "error": "Username required"}), 400
     save_state(state)
-    return jsonify({"ok": True, "username": username})
+    return jsonify({"ok": True, "username": state.get("username", ""),
+                    "max_games": state.get("max_games", 0)})
 
 
 @chesscom_pull_bp.route("/chesscom/username", methods=["GET"])
@@ -54,6 +61,7 @@ def get_username():
         "username":    state.get("username", ""),
         "last_pulled": state.get("last_pulled", ""),
         "last_count":  state.get("last_count", 0),
+        "max_games":   state.get("max_games", 0),
     })
 
 
@@ -66,18 +74,40 @@ def pull_games():
     """
     state    = load_state()
     body     = request.get_json(force=True, silent=True) or {}
-    username = (body.get("username") or state.get("username") or "").strip()
+    username = ((body.get("username") or state.get("username") or "")).strip()
     if not username:
         return jsonify({"ok": False, "error": "Username not set"}), 400
 
-    state["username"] = username
+    # Max games to import (user-settable; 0 = unlimited)
+    try:
+        max_games = int(body.get("max_games") or state.get("max_games") or 0)
+    except (TypeError, ValueError):
+        max_games = 0
+    max_games = max(0, max_games)
+    state["max_games"] = max_games
 
-    # Build list of (year, month) for last 3 months
-    months_to_fetch = []
-    now = datetime.utcnow()
-    for i in range(3):
-        d = now - timedelta(days=30 * i)
-        months_to_fetch.append((d.year, d.month))
+    state["username"] = username
+    save_state(state)
+
+    # Month/year override: fetch a single specific month if both given,
+    # otherwise default to the last 3 months
+    year  = body.get("year")
+    month = body.get("month")
+    if year and month:
+        try:
+            year_i  = int(year)
+            month_i = int(month)
+            if not (2009 <= year_i <= 2100 and 1 <= month_i <= 12):
+                raise ValueError
+            months_to_fetch = [(year_i, month_i)]
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "Invalid year/month"}), 400
+    else:
+        months_to_fetch = []
+        now = datetime.utcnow()
+        for i in range(3):
+            d = now - timedelta(days=30 * i)
+            months_to_fetch.append((d.year, d.month))
 
     headers = {
         "User-Agent": "ChessAnalyzerApp/1.0 contact@example.com",
@@ -119,6 +149,10 @@ def pull_games():
     new_records   = []
 
     for pgn in all_pgns:
+        # Stop once we have saved enough new games
+        if max_games and len(new_records) >= max_games:
+            break
+
         fingerprint = pgn[:200]
         if fingerprint in fingerprints:
             skipped_count += 1

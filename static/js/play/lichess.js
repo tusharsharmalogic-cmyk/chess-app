@@ -18,6 +18,8 @@
           st.textContent = `Last pulled: ${data.last_pulled.replace('T',' ')} — ${data.last_count} games`;
           st.style.color = 'var(--text3)';
         }
+        const maxInp = document.getElementById('lc-pull-max');
+        if (maxInp && data.max_games) maxInp.value = data.max_games;
       }
     } catch(e) { /* backend not up yet — ignore */ }
   }
@@ -37,10 +39,14 @@
     if (statusEl) { statusEl.textContent = 'Fetching games from Lichess...'; statusEl.style.color = 'var(--text3)'; }
 
     try {
+      const maxVal  = parseInt((document.getElementById('lc-pull-max') || {}).value, 10);
+      const payload = { username };
+      if (!isNaN(maxVal) && maxVal > 0) payload.max_games = maxVal;
+
       const res  = await fetch(`${FLASK_URL}/lichess/pull-games`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'Pull failed');
@@ -69,6 +75,8 @@
           st.textContent = `Last pulled: ${data.last_pulled.replace('T',' ')} — ${data.last_count} games`;
           st.style.color = 'var(--text3)';
         }
+        const maxInp = document.getElementById('cc-pull-max');
+        if (maxInp && data.max_games) maxInp.value = data.max_games;
       }
     } catch(e) { /* backend not up yet — ignore */ }
   }
@@ -83,13 +91,28 @@
       return;
     }
 
+    // Optional month/year override — both ya koi nahi
+    const mSel = document.getElementById('cc-pull-month');
+    const ySel = document.getElementById('cc-pull-year');
+    const month = mSel ? mSel.value : '';
+    const year  = ySel ? ySel.value : '';
+    if ((month || year) && !(month && year)) {
+      if (statusEl) { statusEl.textContent = 'Month aur Year dono select karo (ya dono Auto rakho)'; statusEl.style.color = 'var(--danger)'; }
+      return;
+    }
+
     if (statusEl) { statusEl.textContent = 'Fetching games from Chess.com...'; statusEl.style.color = 'var(--text3)'; }
 
     try {
+      const payload = { username };
+      if (month && year) { payload.month = parseInt(month, 10); payload.year = parseInt(year, 10); }
+      const maxVal = parseInt((document.getElementById('cc-pull-max') || {}).value, 10);
+      if (!isNaN(maxVal) && maxVal > 0) payload.max_games = maxVal;
+
       const res  = await fetch(`${FLASK_URL}/chesscom/pull-games`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ username }),
+        body:    JSON.stringify(payload),
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'Pull failed');
