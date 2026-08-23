@@ -250,6 +250,7 @@
         <div class="play-subbtn active" id="sb-makebot" onclick="playSubSwitch('makebot')">⚙ Make Bot</div>
         <div class="play-subbtn" id="sb-playbot" onclick="playSubSwitch('playbot')">♟ Play Bot</div>
         <div class="play-subbtn" id="sb-botvsbot" onclick="playSubSwitch('botvsbot')">⚔ Bot vs Bot</div>
+        <div class="play-subbtn" id="sb-lichess" onclick="playSubSwitch('lichess')">🌐 Lichess Live</div>
         <div class="play-subbtn" id="sb-tournaments" onclick="playSubSwitch('tournaments')">🏆 Tournament's</div>
         <div class="play-subbtn" id="sb-puzzles" onclick="playSubSwitch('puzzles')">🧩 Puzzle</div>
         <div class="play-subbtn" id="sb-history" onclick="playSubSwitch('history')">📜 History</div>
@@ -728,6 +729,85 @@
       </div><!-- end botvsbot page -->
 
       <!-- ── PAGE: Tournaments (🏆 Championship) ─── -->
+      <!-- ── PAGE: Lichess Live ──────────────────────── -->
+      <div class="play-page" id="play-page-lichess">
+
+        <div id="lc-header-ratings" style="display:none;font-size:11px;color:var(--text2);text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:'JetBrains Mono',monospace"></div>
+
+        <!-- Token -->
+        <div class="play-section">
+          <div class="play-section-header">🔑 Lichess Account</div>
+          <div class="play-section-body" style="gap:8px">
+
+            <div id="lc-account-box" style="display:none;flex-direction:row;justify-content:space-between;align-items:center;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px">
+              <span>👤 <span id="lc-account-name" style="font-weight:600;color:var(--text)"></span></span>
+              <span style="color:var(--accent);font-weight:600" id="lc-account-rating"></span>
+            </div>
+
+            <div id="lc-token-form" style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:10px;color:var(--text3);line-height:1.5">
+                Apna Lichess API token chahiye — lichess.org/account/knight par se banao
+                (Board play permissions ke saath).
+              </div>
+              <input type="password" class="play-input" id="lc-token-input" placeholder="lip_..." autocomplete="off">
+              <button class="btn primary" onclick="lcSaveToken()">💾 Save & Connect</button>
+            </div>
+
+            <div class="lc-status-msg" style="font-size:10px;color:var(--text2);text-align:center;min-height:14px"></div>
+          </div>
+        </div>
+
+        <!-- Challenge -->
+        <div class="play-section" id="lc-challenge-wrap" style="display:none">
+          <div class="play-section-header">⚔ Challenge</div>
+          <div class="play-section-body" style="gap:8px">
+
+            <div id="lc-challenge-form" style="display:flex;flex-direction:column;gap:8px">
+              <input type="text" class="play-input" id="lc-username" placeholder="Opponent Lichess username" autocomplete="off">
+
+              <label style="font-size:10px;color:var(--text3)">⏱ Time control</label>
+              <select class="play-input" id="lc-time-select" onchange="lcTimeCustomToggle()">
+                <option value="1+0">Bullet · 1+0</option>
+                <option value="3+2">Blitz · 3+2</option>
+                <option value="5+3" selected>Blitz · 5+3</option>
+                <option value="10+0">Rapid · 10+0</option>
+                <option value="15+10">Rapid · 15+10</option>
+                <option value="custom">Custom</option>
+              </select>
+
+              <div id="lc-custom-time" style="display:none;gap:6px">
+                <input type="number" class="play-input" id="lc-minutes" placeholder="Minutes" min="1" max="180" value="5">
+                <input type="number" class="play-input" id="lc-increment" placeholder="+Increment (sec)" min="0" max="60" value="3">
+              </div>
+
+              <label style="font-size:10px;color:var(--text3)">🎨 Color</label>
+              <select class="play-input" id="lc-color-select">
+                <option value="random" selected>Random</option>
+                <option value="white">White ♔</option>
+                <option value="black">Black ♚</option>
+              </select>
+
+              <div class="btn-row" style="margin-top:4px">
+                <button class="btn primary" onclick="lcChallengeUser()">⚔ Challenge User</button>
+                <button class="btn" onclick="lcOpenSeek()">🌍 Open Seek</button>
+              </div>
+
+              <div class="lc-status-msg" style="font-size:10px;color:var(--text2);text-align:center;min-height:14px"></div>
+            </div>
+
+            <!-- Pending state -->
+            <div id="lc-pending" style="display:none;flex-direction:column;align-items:center;gap:8px;padding:12px 0">
+              <div class="lc-spinner"></div>
+              <div id="lc-pending-label" style="font-size:11px;color:var(--text2);text-align:center"></div>
+              <button class="btn danger sm" onclick="lcCancelPending()">✕ Cancel</button>
+            </div>
+
+            <div id="lc-seek-url" style="display:none;font-size:10px;text-align:center;word-break:break-all"></div>
+          </div>
+        </div>
+
+      </div><!-- end lichess page -->
+
       <div class="play-page" id="play-page-tournaments">
         <div id="tour-root"></div>
       </div><!-- end tournaments page -->
@@ -883,6 +963,31 @@
 
       </div><!-- end bvb ingame controls -->
 
+
+      <!-- ── LICHESS IN-GAME CONTROLS ──────────────── -->
+      <div class="ingame-controls" id="lichess-controls">
+
+        <div class="lc-status-msg" style="font-size:11px;color:var(--text2);text-align:center"></div>
+
+        <div class="btn-row">
+          <button class="btn" onclick="playFlipBoard()">⇅ Flip</button>
+          <button class="btn" id="lc-abort-btn" onclick="lcAbort()">⊘ Abort</button>
+          <button class="btn" id="lc-draw-btn" onclick="lcOfferDraw()">🤝 Draw</button>
+          <button class="btn danger" onclick="lcResign()">🏳 Resign</button>
+        </div>
+
+        <div class="game-over-banner" id="lc-over-banner" style="display:none;flex-direction:column;gap:6px;background:rgba(196,163,90,0.12);border:1px solid var(--accent);border-radius:8px;padding:12px 16px;text-align:center">
+          <div class="game-over-title" id="lc-over-title">Game Over</div>
+          <div class="game-over-reason" id="lc-over-reason"></div>
+          <div class="game-over-reason" id="lc-over-rating" style="display:none;font-weight:600"></div>
+          <div class="btn-row" style="margin-top:4px;flex-wrap:wrap;justify-content:center">
+            <button class="btn primary sm" id="lc-rematch-btn" onclick="lcRematch()">🔄 Rematch</button>
+            <button class="btn sm" onclick="lcReviewGame()">📊 History</button>
+            <button class="btn sm" onclick="lcBackToLobby()">🏠 Lobby</button>
+          </div>
+        </div>
+
+      </div><!-- end lichess controls -->
 
       <!-- ── IN-GAME CONTROLS ───────────────────────── -->
       <div class="ingame-controls" id="ingame-controls">
@@ -1285,6 +1390,7 @@
 <script src="static/js/play/play-setup.js"></script>
 <script src="static/js/play/bvb.js"></script>
 <script src="static/js/play/tournament.js"></script>
+<script src="static/js/play/lichess.js"></script>
 <script src="static/js/shared/personality.js"></script>
 <script src="static/js/play/bot-builder.js"></script>
 <script src="static/js/analysis/review.js"></script>

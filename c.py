@@ -62,6 +62,9 @@ app.register_blueprint(puzzles_bp)
 from routes.tournament import tournament_bp
 app.register_blueprint(tournament_bp)
 
+from routes.lichess import lichess_bp
+app.register_blueprint(lichess_bp)
+
 # ── Static file serving ───────────────────────────────────────────────────────
 
 @app.route("/")
