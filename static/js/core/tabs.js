@@ -250,6 +250,10 @@
       if (sb) sb.classList.toggle('active', p === page);
       if (pg) pg.classList.toggle('active', p === page);
     });
+    // Refresh tournaments view when opening that page
+    if (page === 'tournaments' && typeof renderTournaments === 'function') {
+      try { renderTournaments(); } catch(e) {}
+    }
     // Hide bvb ingame controls when switching away
     document.getElementById('bvb-ingame-controls').style.display = 'none';
     // If switching back to setup pages, hide in-game controls (unless game active)

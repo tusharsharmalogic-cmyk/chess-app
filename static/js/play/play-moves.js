@@ -272,6 +272,9 @@ function checkPlayGameOver() {
     savePlayGameToHistory(title, reason);
     submitMatchResult(title);
   }
+
+  // Tournament hook — Championship knockout continuation
+  if (window.tourOnUserGameOver) { try { tourOnUserGameOver(title); } catch(e) {} }
 }
 
 function endGame(title, reason) {
@@ -285,6 +288,9 @@ function endGame(title, reason) {
     savePlayGameToHistory(title, reason);
     submitMatchResult(title);
   }
+
+  // Tournament hook — Championship knockout continuation
+  if (window.tourOnUserGameOver) { try { tourOnUserGameOver(title); } catch(e) {} }
 }
 
 async function resignGame() {

@@ -337,6 +337,9 @@ function bvbHandleGameOver() {
   document.getElementById('copy-pgn-btn').classList.add('show', 'pulse');
 
   if (bvbGame.history().length > 0) saveBvbGameToHistory(title, reason, whiteBotName, blackBotName);
+
+  // Tournament hook — Championship knockout continuation
+  if (window.tourOnBvbGameOver) { try { tourOnBvbGameOver(); } catch(e) {} }
 }
 
 // ── Save to history ───────────────────────────────────────────

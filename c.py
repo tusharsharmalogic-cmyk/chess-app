@@ -59,6 +59,9 @@ app.register_blueprint(review_bp)
 app.register_blueprint(imported_bp)
 app.register_blueprint(puzzles_bp)
 
+from routes.tournament import tournament_bp
+app.register_blueprint(tournament_bp)
+
 # ── Static file serving ───────────────────────────────────────────────────────
 
 @app.route("/")
