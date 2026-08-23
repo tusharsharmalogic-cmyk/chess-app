@@ -88,7 +88,8 @@ const depth = parseInt(document.getElementById('depth-slider').value);
 
   // FEN
   function updateFENDisplay() {
-    document.getElementById('current-fen').textContent = game.fen();
+    const el = document.getElementById('current-fen');
+    if (el) el.textContent = game.fen();
   }
 
   function loadFEN() {
