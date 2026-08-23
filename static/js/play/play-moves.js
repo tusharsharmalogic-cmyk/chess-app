@@ -31,12 +31,6 @@ function handleSquareTap(square) {
     return;
   }
 
-  // 🌐 Lichess live game — board taps go to the lichess handler
-  if (typeof lcIsActive === 'function' && lcIsActive()) {
-    lcHandleSquareTap(square);
-    return;
-  }
-
   if (_currentTab === 'analysis' || _currentTab === 'pgn' || _currentTab === 'fen') {
     handleSquareTapAnalysis(square);
     return;

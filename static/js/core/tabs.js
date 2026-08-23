@@ -269,7 +269,7 @@
   }
 
   function playSubSwitch(page) {
-    ['makebot','playbot','botvsbot','lichess','tournaments','history','puzzles'].forEach(p => {
+    ['makebot','playbot','botvsbot','tournaments','history','puzzles'].forEach(p => {
       const sb = document.getElementById('sb-' + p);
       const pg = document.getElementById('play-page-' + p);
       if (sb) sb.classList.toggle('active', p === page);
@@ -278,10 +278,6 @@
     // Refresh tournaments view when opening that page
     if (page === 'tournaments' && typeof renderTournaments === 'function') {
       try { renderTournaments(); } catch(e) {}
-    }
-    // Refresh lichess page (token check) when opening it
-    if (page === 'lichess' && typeof renderLichessPage === 'function') {
-      try { renderLichessPage(); } catch(e) {}
     }
     // Hide bvb ingame controls when switching away
     document.getElementById('bvb-ingame-controls').style.display = 'none';

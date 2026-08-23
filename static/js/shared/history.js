@@ -206,7 +206,6 @@ const depth = parseInt(document.getElementById('depth-slider').value);
   let _historyDetailGame = null;
   let _historySelectMode = false;
   let _historySelected = new Set();
-  let _historyFilter = 'all';   // 'all' | 'bot' | 'lichess'
 
   function formatHistTime(ms) {
     if (ms === null || ms === undefined) return '';
@@ -254,26 +253,8 @@ const depth = parseInt(document.getElementById('depth-slider').value);
 
     body.innerHTML = '';
 
-    // ── Filter chips: All / Bot Games / Lichess Games ──
-    const filterRow = document.createElement('div');
-    filterRow.style.cssText = 'display:flex;gap:6px;justify-content:center;padding:2px 0 6px';
-    [['all', 'All'], ['bot', 'Bot Games'], ['lichess', '🌐 Lichess']].forEach(([val, label]) => {
-      const chip = document.createElement('span');
-      chip.textContent = label;
-      const activeChip = _historyFilter === val;
-      chip.style.cssText = `font-size:10px;padding:3px 10px;border-radius:12px;cursor:pointer;border:1px solid ${activeChip ? 'var(--accent)' : 'var(--border)'};color:${activeChip ? 'var(--accent)' : 'var(--text2)'};font-weight:${activeChip ? 600 : 400}`;
-      chip.onclick = () => { _historyFilter = val; renderHistoryList(); };
-      filterRow.appendChild(chip);
-    });
-    body.appendChild(filterRow);
-
-    let games = _historyGames;
-    if (_historyFilter === 'bot')     games = games.filter(g => g.mode !== 'lichess');
-    if (_historyFilter === 'lichess') games = games.filter(g => g.mode === 'lichess');
-
-    const lichessGames = games.filter(g => g.mode === 'lichess');
-    const playbotGames = games.filter(g => g.mode !== 'botvsbot' && g.mode !== 'lichess');
-    const bvbGames     = games.filter(g => g.mode === 'botvsbot');
+    const playbotGames = _historyGames.filter(g => g.mode !== 'botvsbot');
+    const bvbGames     = _historyGames.filter(g => g.mode === 'botvsbot');
 
     function _makeHistoryItem(g) {
       const item = document.createElement('div');
@@ -307,9 +288,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       const left = document.createElement('div');
       left.className = 'history-item-left';
 
-      const modeLabel = g.mode === 'botvsbot' ? '⚔ Bot vs Bot'
-                      : g.mode === 'lichess'  ? '🌐 Lichess' : '♟ vs Bot';
-      const lcBadge = g.mode === 'lichess' ? ' <span class="lc-badge">lichess</span>' : '';
+      const modeLabel = g.mode === 'botvsbot' ? '⚔ Bot vs Bot' : '♟ vs Bot';
       const titleEl = document.createElement('div');
       titleEl.className = 'history-item-title';
       titleEl.textContent = `${g.white_name || 'White'} vs ${g.black_name || 'Black'}`;
@@ -317,7 +296,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       const subEl = document.createElement('div');
       subEl.className = 'history-item-sub';
       const moveCount = (g.moves || []).length;
-      subEl.innerHTML = `${modeLabel}${lcBadge} · ${moveCount} moves · ${g.reason || ''} · ${formatHistDate(g.ended_at)}`;
+      subEl.textContent = `${modeLabel} · ${moveCount} moves · ${g.reason || ''} · ${formatHistDate(g.ended_at)}`;
 
       left.appendChild(titleEl);
       left.appendChild(subEl);
@@ -328,7 +307,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       else if (g.winner === 'black') { label = '0-1'; }
       else if (g.winner === 'draw') { label = '½-½'; }
 
-      if (g.mode === 'playbot' || g.mode === 'lichess') {
+      if (g.mode === 'playbot') {
         const playerColor = g.player_color === 'w' ? 'white' : 'black';
         if (g.winner === 'draw') cls = 'draw';
         else if (g.winner === playerColor) cls = 'win';
@@ -367,15 +346,6 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       playbotGames.forEach(g => body.appendChild(_makeHistoryItem(g)));
     }
 
-    // ── Lichess Live section (top-most) ──
-    if (lichessGames.length > 0) {
-      const hdrLc = document.createElement('div');
-      hdrLc.style.cssText = 'font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;padding:4px 2px 2px';
-      hdrLc.textContent = '🌐 Lichess Live';
-      body.appendChild(hdrLc);
-      lichessGames.forEach(g => body.appendChild(_makeHistoryItem(g)));
-    }
-
     // ── Bot vs Bot section (bottom) ──
     if (bvbGames.length > 0) {
       const hdr2 = document.createElement('div');
@@ -393,8 +363,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
 
     document.getElementById('history-detail').style.display = 'flex';
 
-    const modeLabel = g.mode === 'botvsbot' ? '⚔ Bot vs Bot'
-                    : g.mode === 'lichess'  ? '🌐 Lichess Live' : '♟ Play vs Bot';
+    const modeLabel = g.mode === 'botvsbot' ? '⚔ Bot vs Bot' : '♟ Play vs Bot';
     document.getElementById('history-detail-title').textContent =
       `${g.white_name || 'White'} vs ${g.black_name || 'Black'}`;
 
@@ -415,9 +384,6 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       <div><b>Played:</b> ${formatHistDate(g.ended_at)}</div>
       <div><b>Time control:</b> ${tc}</div>
       <div><b>Time left — White:</b> ${wLeft} &nbsp;|&nbsp; <b>Black:</b> ${bLeft}</div>
-      ${g.source === 'lichess' && g.lichess_game_id
-        ? `<div><a href="https://lichess.org/${g.lichess_game_id}" target="_blank" style="color:var(--accent)">🔗 View on Lichess</a></div>`
-        : ''}
     `;
 
     // Load review data if this game has been reviewed
