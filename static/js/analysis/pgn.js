@@ -118,6 +118,19 @@
     if (el) el.textContent = msg;
   }
 
+  // ── Imported list filter ('all' | 'online') ──────────────────
+
+  let _importedFilter = 'all';
+
+  function impSetFilter(f) {
+    _importedFilter = f;
+    const allBtn = document.getElementById('imp-filter-all');
+    const onlBtn = document.getElementById('imp-filter-online');
+    if (allBtn) allBtn.classList.toggle('active', f === 'all');
+    if (onlBtn) onlBtn.classList.toggle('active', f === 'online');
+    renderImportedList();
+  }
+
   // ── Render list ──────────────────────────────────────────────
 
   async function renderImportedList() {
@@ -133,13 +146,20 @@
       return;
     }
 
-    if (_importedGames.length === 0) {
-      body.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">No imported games yet</div>';
+    const shown = _importedFilter === 'online'
+      ? _importedGames.filter(g => g.source === 'lichess')
+      : _importedGames;
+
+    if (shown.length === 0) {
+      const msg = _importedFilter === 'online'
+        ? 'No online games pulled yet \u2014 Pull Lichess Games se Player Profile mein username daalo'
+        : 'No imported games yet';
+      body.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">' + msg + '</div>';
       return;
     }
 
     body.innerHTML = '';
-    _importedGames.forEach(g => body.appendChild(_makeImportedItem(g)));
+    shown.forEach(g => body.appendChild(_makeImportedItem(g)));
   }
 
   function _makeImportedItem(g) {
@@ -176,11 +196,13 @@
 
     const titleEl = document.createElement('div');
     titleEl.className = 'history-item-title';
-    titleEl.textContent = `${g.white_name || 'White'} vs ${g.black_name || 'Black'}`;
+    const wElo = g.white_elo ? ` (${g.white_elo})` : '';
+    const bElo = g.black_elo ? ` (${g.black_elo})` : '';
+    titleEl.textContent = `${g.white_name || 'White'}${wElo} vs ${g.black_name || 'Black'}${bElo}`;
 
     const subEl = document.createElement('div');
     subEl.className = 'history-item-sub';
-    const parts = ['📥 Imported'];
+    const parts = [g.source === 'lichess' ? '🌐 Online' : '📥 Imported'];
     if (g.event && g.event !== '?' && g.event !== 'Casual Game') parts.push(g.event);
     if (g.date_str) parts.push(_formatImportedDate(g.date_str));
     const tc = _formatTCLabel(g.time_control);
@@ -214,6 +236,16 @@
     const rightCol = document.createElement('div');
     rightCol.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0';
     rightCol.appendChild(resultEl);
+    if (g.source === 'lichess' && g.site && g.site.indexOf('http') === 0) {
+      const lcLink = document.createElement('a');
+      lcLink.href = g.site;
+      lcLink.target = '_blank';
+      lcLink.rel = 'noopener';
+      lcLink.textContent = 'View on Lichess \u2192';
+      lcLink.style.cssText = 'font-size:9px;color:#4a9eff;text-decoration:none';
+      lcLink.onclick = (e) => e.stopPropagation();
+      rightCol.appendChild(lcLink);
+    }
     const isReviewed = _reviewedFingerprints.size > 0 && g.pgn &&
                        _reviewedFingerprints.has(_pgnMoveBody(g.pgn));
     if (isReviewed) {
@@ -253,8 +285,9 @@
       <div><b>White:</b> ${g.white_name || '—'}</div>
       <div><b>Black:</b> ${g.black_name || '—'}</div>
       <div><b>Result:</b> ${resultLabel}</div>
+      ${(g.white_elo || g.black_elo) ? `<div><b>ELO:</b> ${g.white_elo || '\u2014'} vs ${g.black_elo || '\u2014'}</div>` : ''}
       ${g.event && g.event !== '?' ? `<div><b>Event:</b> ${g.event}</div>` : ''}
-      ${g.site && g.site !== '?' ? `<div><b>Site:</b> ${g.site}</div>` : ''}
+      ${g.site && g.site !== '?' ? `<div><b>Site:</b> ${g.site.indexOf('http') === 0 ? `<a href="${g.site}" target="_blank" rel="noopener" style="color:var(--accent)">View on Lichess \u2192</a>` : g.site}</div>` : ''}
       <div><b>Date played:</b> ${dateDisp}</div>
       <div><b>Time control:</b> ${tc}</div>
       <div><b>Moves:</b> ${g.move_count ? Math.ceil(g.move_count/2) : '—'}</div>

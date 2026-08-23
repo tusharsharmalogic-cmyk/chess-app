@@ -23,6 +23,7 @@ from routes.play     import play_bp
 from routes.review   import review_bp
 from routes.imported import imported_bp
 from routes.puzzles  import puzzles_bp
+from routes.lichess_pull import lichess_pull_bp
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,7 @@ app.register_blueprint(play_bp)
 app.register_blueprint(review_bp)
 app.register_blueprint(imported_bp)
 app.register_blueprint(puzzles_bp)
+app.register_blueprint(lichess_pull_bp)
 
 from routes.tournament import tournament_bp
 app.register_blueprint(tournament_bp)

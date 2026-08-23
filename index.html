@@ -278,6 +278,19 @@
             <div style="font-size:10px;color:var(--text3);line-height:1.5">
               Match khatam hone par tumhari ELO automatically update hogi — bot ki "Estimated ELO" (neeche set karo) se compare karke, chess.com-style.
             </div>
+
+            <!-- Lichess Pull Section -->
+            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+              <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">🌐 Lichess Games</div>
+              <div class="play-field">
+                <div class="play-label">Lichess Username</div>
+                <input type="text" class="play-input" id="lc-pull-username" placeholder="e.g. tushar123" autocomplete="off">
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                <button class="btn primary sm" onclick="lcPullGames()">🔄 Pull Lichess Games</button>
+              </div>
+              <div id="lc-pull-status" style="font-size:10px;color:var(--text3);margin-top:6px;min-height:14px"></div>
+            </div>
           </div>
         </div>
 
@@ -794,6 +807,11 @@
             </span>
           </div>
           <div class="play-section-body" style="gap:8px">
+            <!-- Imported games filter tabs -->
+            <div style="display:flex;gap:6px">
+              <div class="play-subbtn active" id="imp-filter-all" onclick="impSetFilter('all')">📋 All</div>
+              <div class="play-subbtn" id="imp-filter-online" onclick="impSetFilter('online')">🌐 Online Played</div>
+            </div>
             <!-- Import controls -->
             <div style="display:flex;flex-direction:column;gap:6px">
               <textarea id="import-pgn-input" rows="4" placeholder="PGN paste karo (ek ya multiple games)..." style="width:100%;box-sizing:border-box;background:var(--bg2);color:var(--text1);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:11px;font-family:monospace;resize:vertical"></textarea>
@@ -1287,6 +1305,7 @@
 <script src="static/js/play/tournament.js"></script>
 <script src="static/js/shared/personality.js"></script>
 <script src="static/js/play/bot-builder.js"></script>
+<script src="static/js/play/lichess.js"></script>
 <script src="static/js/analysis/review.js"></script>
 <script>
 // ── Bot Builder section toggle ───────────────────────────
