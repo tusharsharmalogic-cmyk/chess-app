@@ -259,8 +259,11 @@
       <div class="play-page active" id="play-page-makebot">
 
         <div class="play-section">
-          <div class="play-section-header">👤 Player Profile</div>
-          <div class="play-section-body">
+          <div class="play-section-header" onclick="psToggle('pp-body','pp-arrow')" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between">
+            <span>👤 Player Profile</span>
+            <span id="pp-arrow" style="font-size:11px;color:var(--text3)">▾</span>
+          </div>
+          <div class="play-section-body" id="pp-body">
             <div class="play-field">
               <div class="play-label">Your Name</div>
               <input type="text" class="play-input" id="player-name" placeholder="e.g. Rohan">
@@ -349,8 +352,11 @@
         </div>
 
         <div class="play-section">
-          <div class="play-section-header">⚙ Bot Settings</div>
-          <div class="play-section-body">
+          <div class="play-section-header" onclick="psToggle('bs-body','bs-arrow')" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between">
+            <span>⚙ Bot Settings</span>
+            <span id="bs-arrow" style="font-size:11px;color:var(--text3)">▸</span>
+          </div>
+          <div class="play-section-body" id="bs-body" style="display:none">
 
             <div class="play-field">
               <div class="play-label">Bot Name</div>
@@ -472,8 +478,11 @@
 
         <!-- ── Import Bots (multi-bot JSON) ── -->
         <div class="play-section" style="border-color:rgba(196,163,90,0.3)">
-          <div class="play-section-header" style="background:rgba(196,163,90,0.07)">📦 Import Bots (JSON)</div>
-          <div class="play-section-body">
+          <div class="play-section-header" onclick="psToggle('ib-body','ib-arrow')" style="background:rgba(196,163,90,0.07);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between">
+            <span>📦 Import Bots (JSON)</span>
+            <span id="ib-arrow" style="font-size:11px;color:var(--text3);font-weight:400">▸</span>
+          </div>
+          <div class="play-section-body" id="ib-body" style="display:none">
 
             <div style="font-size:10px;color:var(--text3);line-height:1.6;padding:4px 0">
               AI se generate kiya hua bot JSON yahan paste karo <b style="color:var(--text2)">ya file(s) upload karo</b>.<br>
@@ -556,8 +565,11 @@
         </div>
 
         <div class="play-section" id="saved-bots-section">
-          <div class="play-section-header">🤖 Saved Bots</div>
-          <div class="play-section-body" style="padding:10px 14px">
+          <div class="play-section-header" onclick="psToggle('sb-bots-body','sb-bots-arrow')" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between">
+          <span>🤖 Saved Bots</span>
+          <span id="sb-bots-arrow" style="font-size:11px;color:var(--text3);font-weight:400">▾</span>
+        </div>
+          <div class="play-section-body" id="sb-bots-body" style="padding:10px 14px">
             <div class="bots-list" id="bots-list">
               <div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">No bots saved yet</div>
             </div>
@@ -568,9 +580,9 @@
         <div class="play-section" id="bb-section">
           <div class="play-section-header" onclick="bbToggleSection()" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between">
             <span>🧠 Visual Personality Builder</span>
-            <span id="bb-section-arrow" style="font-size:11px;color:var(--text3)">▾</span>
+            <span id="bb-section-arrow" style="font-size:11px;color:var(--text3)">▸</span>
           </div>
-          <div class="play-section-body" id="bb-section-body" style="padding:10px 12px;gap:10px">
+          <div class="play-section-body" id="bb-section-body" style="display:none;padding:10px 12px;gap:10px">
 
             <!-- Personality name -->
             <div class="play-field">
@@ -1368,6 +1380,16 @@
 <script src="static/js/play/lichess.js"></script>
 <script src="static/js/analysis/review.js"></script>
 <script>
+// ── Generic section collapse/expand (Make Bot page cleanup) ──
+function psToggle(bodyId, arrowId) {
+  const body = document.getElementById(bodyId);
+  if (!body) return;
+  const hidden = body.style.display === 'none';
+  body.style.display = hidden ? '' : 'none';
+  const arrow = document.getElementById(arrowId);
+  if (arrow) arrow.textContent = hidden ? '▾' : '▸';
+}
+
 // ── Bot Builder section toggle ───────────────────────────
 function bbToggleSection() {
   const body  = document.getElementById('bb-section-body');
