@@ -365,13 +365,72 @@ def submit_result():
     player["games_played"] = games_played + 1
     save_player(player)
 
+    # Bot ki estimated ELO bhi same formula se update karo (opposite score)
+    bot_old_elo = bot_elo
+    bot_new_elo, bot_delta = calc_elo_change(bot_elo, new_elo, 1.0 - score, bot.get("games_played", 0))
+    bot["bot_elo"] = bot_new_elo
+    bot["games_played"] = bot.get("games_played", 0) + 1
+    save_bots(bots)
+
     return jsonify({
         "ok": True,
         "old_elo": old_elo,
         "new_elo": new_elo,
         "delta":   delta,
-        "bot_elo": bot_elo,
+        "bot_elo": bot_old_elo,
         "player":  player,
+        "bot_elo_update": {
+            "old":     bot_old_elo,
+            "new":     bot_new_elo,
+            "delta":   bot_delta,
+        },
+    })
+
+
+# ==========================================================================
+#  BOT vs BOT MATCH RESULT — update BOTH bots' ELO
+# ==========================================================================
+
+@play_bp.route("/play/bvb-result", methods=["POST"])
+def bvb_match_result():
+    data = request.get_json() or {}
+    white_id = data.get("white_id")
+    black_id = data.get("black_id")
+    result = data.get("result")          # '1-0' | '0-1' | '1/2-1/2'
+
+    if not white_id or not black_id:
+        return jsonify({"error": "white_id and black_id required"}), 400
+    if result not in ("1-0", "0-1", "1/2-1/2"):
+        return jsonify({"error": "result must be 1-0, 0-1 or 1/2-1/2"}), 400
+    if white_id == black_id:
+        return jsonify({"error": "A bot cannot play itself"}), 400
+
+    bots = load_bots()
+    w_bot = bots.get(white_id)
+    b_bot = bots.get(black_id)
+    if not w_bot or not b_bot:
+        return jsonify({"error": "Bot not found"}), 404
+
+    w_elo = w_bot.get("bot_elo")
+    b_elo = b_bot.get("bot_elo")
+    if w_elo is None or b_elo is None:
+        return jsonify({"error": "Both bots need estimated ELO set"}), 400
+
+    w_score = {"1-0": 1.0, "0-1": 0.0, "1/2-1/2": 0.5}[result]
+
+    w_new, w_delta = calc_elo_change(w_elo, b_elo, w_score, w_bot.get("games_played", 0))
+    b_new, b_delta = calc_elo_change(b_elo, w_elo, 1.0 - w_score, b_bot.get("games_played", 0))
+
+    w_bot["bot_elo"] = w_new
+    w_bot["games_played"] = w_bot.get("games_played", 0) + 1
+    b_bot["bot_elo"] = b_new
+    b_bot["games_played"] = b_bot.get("games_played", 0) + 1
+    save_bots(bots)
+
+    return jsonify({
+        "ok": True,
+        "white": {"id": white_id, "old": w_elo, "new": w_new, "delta": w_delta},
+        "black": {"id": black_id, "old": b_elo, "new": b_new, "delta": b_delta},
     })
 
 

@@ -338,8 +338,29 @@ function bvbHandleGameOver() {
 
   if (bvbGame.history().length > 0) saveBvbGameToHistory(title, reason, whiteBotName, blackBotName);
 
+  // Dono bots ki estimated ELO update karo (same formula as player)
+  {
+    let _res = '*';
+    if (bvbGame.in_checkmate()) _res = bvbGame.turn() === 'w' ? '0-1' : '1-0';
+    else if (bvbGame.in_draw && bvbGame.in_draw()) _res = '1/2-1/2';
+    if (_res !== '*') { try { _reportBvbResult(_res); } catch(e) {} }
+  }
+
   // Tournament hook — Championship knockout continuation
   if (window.tourOnBvbGameOver) { try { tourOnBvbGameOver(); } catch(e) {} }
+}
+
+// ── Bot vs Bot ELO report ─────────────────────────────────────
+
+function _reportBvbResult(result) {
+  if (!result) return;
+  const wId = bvbState.whiteBotId, bId = bvbState.blackBotId;
+  if (!wId || !bId || wId === bId) return;
+  fetch(`${FLASK_URL}/play/bvb-result`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ white_id: wId, black_id: bId, result }),
+  }).catch(() => {});
 }
 
 // ── Save to history ───────────────────────────────────────────
@@ -547,6 +568,7 @@ function startBvbClock() {
         document.getElementById('bvb-game-over-reason').textContent = whiteBotName + ' ran out of time';
         document.getElementById('bvb-game-over-banner').style.display = 'flex';
         if (bvbGame.history().length > 0) saveBvbGameToHistory(timeTitle, whiteBotName + ' ran out of time', whiteBotName, blackBotName, '0-1');
+        try { _reportBvbResult('0-1'); } catch(e) {}
         // Tournament hook
         if (window.tourOnBvbGameOver) { try { tourOnBvbGameOver(); } catch(e) {} }
         return;
@@ -564,6 +586,7 @@ function startBvbClock() {
         document.getElementById('bvb-game-over-reason').textContent = blackBotName + ' ran out of time';
         document.getElementById('bvb-game-over-banner').style.display = 'flex';
         if (bvbGame.history().length > 0) saveBvbGameToHistory(timeTitle, blackBotName + ' ran out of time', whiteBotName, blackBotName, '1-0');
+        try { _reportBvbResult('1-0'); } catch(e) {}
         // Tournament hook
         if (window.tourOnBvbGameOver) { try { tourOnBvbGameOver(); } catch(e) {} }
         return;
