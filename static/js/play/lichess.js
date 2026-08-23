@@ -130,3 +130,29 @@
   // Call inits shortly after page load
   document.addEventListener('DOMContentLoaded', () => setTimeout(lcPullInit, 500));
   document.addEventListener('DOMContentLoaded', () => setTimeout(ccPullInit, 600));
+
+// ── Lichess Hub: profile deep-link ───────────────────────────
+
+async function lcRefreshProfileLink() {
+  const a = document.getElementById('lc-profile-link');
+  if (!a) return;
+  let u = '';
+  const inp = document.getElementById('lc-pull-username');
+  if (inp && inp.value.trim()) {
+    u = inp.value.trim();
+  } else {
+    try {
+      const res  = await fetch(`${FLASK_URL}/lichess/username`);
+      const data = await res.json();
+      u = (data.username || '').trim();
+    } catch(e) {}
+  }
+  if (u) {
+    a.href = 'https://lichess.org/@/' + encodeURIComponent(u);
+    a.textContent = '\uD83D\uDC64 My Profile (@' + u + ')';
+  } else {
+    a.href = 'https://lichess.org';
+    a.textContent = '\uD83D\uDC64 My Profile (Player Profile mein username save karo)';
+  }
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(lcRefreshProfileLink, 800));

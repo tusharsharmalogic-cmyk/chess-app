@@ -269,7 +269,7 @@
   }
 
   function playSubSwitch(page) {
-    ['makebot','playbot','botvsbot','tournaments','history','puzzles'].forEach(p => {
+    ['makebot','playbot','botvsbot','tournaments','history','puzzles','lichess'].forEach(p => {
       const sb = document.getElementById('sb-' + p);
       const pg = document.getElementById('play-page-' + p);
       if (sb) sb.classList.toggle('active', p === page);
@@ -295,6 +295,8 @@
     if (page === 'history') { closeHistoryDetail(); renderHistoryList(); renderImportedList(); }
     // Load puzzle list + stats when switching to puzzles
     if (page === 'puzzles' && typeof pzRefreshUI === 'function') pzRefreshUI();
+    // Refresh Lichess profile link when switching to lichess hub
+    if (page === 'lichess' && typeof lcRefreshProfileLink === 'function') lcRefreshProfileLink();
 
     updatePlayBoardVisibility();
   }
