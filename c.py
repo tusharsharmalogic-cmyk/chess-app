@@ -86,6 +86,20 @@ def root_files(filename):
 
 # ── Core API routes ───────────────────────────────────────────────────────────
 
+@app.route("/api/piece-sets")
+def piece_sets():
+    # img/chesspieces/ ke saare subfolders (piece style sets), alphabetically sorted
+    base = os.path.join(BASE_DIR, "img", "chesspieces")
+    try:
+        sets = sorted(
+            d for d in os.listdir(base)
+            if os.path.isdir(os.path.join(base, d))
+        )
+    except Exception:
+        sets = ["wikipedia"]
+    return jsonify(sets)
+
+
 @app.route("/ping")
 def ping():
     engine, err = get_engine()

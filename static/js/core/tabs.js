@@ -41,6 +41,7 @@
 
   // Track which tab is currently visible
   let _currentTab = 'analysis';
+  let _settingsTabInited = false;   // Settings tab sirf ek baar init ho
 
   function switchTab(name) {
     if (setupMode && name !== 'analysis') setupCancel();
@@ -72,7 +73,7 @@
       _saveAnalysisSnapshot();
     }
 
-    const names = ['analysis', 'pgn', 'fen', 'play', 'review'];
+    const names = ['analysis', 'pgn', 'fen', 'play', 'review', 'settings'];
     // Update bottom nav active state
     names.forEach(n => {
       const el = document.getElementById('nav-' + n);
@@ -161,6 +162,19 @@
       } else {
         document.body.classList.add('review-board-hidden');
       }
+    } else if (name === 'settings') {
+      // Settings tab — play/review UI states clean karo, analysis board ko touch mat karo
+      document.body.classList.remove('review-readonly');
+      document.body.classList.remove('play-board-hidden');
+      document.body.classList.remove('review-board-hidden');
+      document.getElementById('clock-top-row').classList.remove('show');
+      document.getElementById('clock-bottom-row').classList.remove('show');
+      document.getElementById('copy-pgn-btn').classList.remove('show', 'pulse');
+      // Pehli baar khulne par init (dropdown + pickers wire)
+      if (!_settingsTabInited && typeof initSettingsTab === 'function') {
+        _settingsTabInited = true;
+        try { initSettingsTab(); } catch(e) { console.error('initSettingsTab failed', e); }
+      }
     } else {
       // Returning to Analysis / PGN / FEN
       document.body.classList.remove('review-readonly');
@@ -241,6 +255,82 @@
   checkConnection();
   loadPlayerProfile();
   setInterval(checkConnection, 10000);
+
+  // ============================================================
+  //  SETTINGS TAB — piece style + board colors
+  // ============================================================
+
+  async function initSettingsTab() {
+    // 1. Flask se piece set list fetch karo
+    let sets = ['wikipedia'];
+    try {
+      const res = await fetch('/api/piece-sets');
+      sets = await res.json();
+      if (!Array.isArray(sets) || !sets.length) sets = ['wikipedia'];
+    } catch(e) { /* offline — fallback */ }
+
+    // 2. Dropdown populate karo
+    const sel = document.getElementById('piece-set-select');
+    sel.innerHTML = '';
+    const saved = localStorage.getItem('pieceSet') || 'wikipedia';
+    sets.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      if (name === saved) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    // Saved set list mein nahi hai toh pehla option dikhao
+    if (!sets.includes(saved)) {
+      sel.value = sets[0];
+      updatePiecePreview(sets[0]);
+    }
+
+    // 3. Preview images current selection ke liye
+    updatePiecePreview(sel.value);
+
+    // 4. Dropdown change -> preview + board dono update
+    sel.addEventListener('change', () => {
+      const chosen = sel.value;
+      updatePiecePreview(chosen);
+      if (typeof window.applyPieceSet === 'function') window.applyPieceSet(chosen);
+    });
+
+    // 5. Board color pickers
+    const lightPicker = document.getElementById('sq-light-picker');
+    const darkPicker  = document.getElementById('sq-dark-picker');
+    lightPicker.value = localStorage.getItem('sqLight') || '#f0d9b5';
+    darkPicker.value  = localStorage.getItem('sqDark')  || '#b58863';
+
+    lightPicker.addEventListener('input', e => {
+      document.documentElement.style.setProperty('--sq-light', e.target.value);
+      localStorage.setItem('sqLight', e.target.value);
+    });
+    darkPicker.addEventListener('input', e => {
+      document.documentElement.style.setProperty('--sq-dark', e.target.value);
+      localStorage.setItem('sqDark', e.target.value);
+    });
+
+    // 6. Reset button — default colors
+    document.getElementById('sq-reset-btn').addEventListener('click', () => {
+      const dl = '#f0d9b5', dd = '#b58863';
+      lightPicker.value = dl;
+      darkPicker.value  = dd;
+      document.documentElement.style.setProperty('--sq-light', dl);
+      document.documentElement.style.setProperty('--sq-dark',  dd);
+      localStorage.setItem('sqLight', dl);
+      localStorage.setItem('sqDark',  dd);
+    });
+  }
+
+  function updatePiecePreview(setName) {
+    const ext = (setName === 'wikipedia') ? 'png' : 'svg';
+    ['wK','wQ','wR','wB','wN','wP'].forEach(p => {
+      const img = document.getElementById('preview-' + p);
+      if (img) img.src = `img/chesspieces/${setName}/${p}.${ext}`;
+    });
+  }
+
 
   // ═══════════════════════════════════════════════════════════════
   //  PLAY TAB — Full Implementation

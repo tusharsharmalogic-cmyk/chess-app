@@ -5,6 +5,14 @@
 
   const FLASK_URL = 'http://localhost:5050';
 
+  // ── Settings: saved appearance prefs (localStorage) ────────────────
+  const savedPieceSet = localStorage.getItem('pieceSet') || 'wikipedia';
+  const savedLightSq  = localStorage.getItem('sqLight') || '#f0d9b5';
+  const savedDarkSq   = localStorage.getItem('sqDark')  || '#b58863';
+  // Board colors ko load hote hi apply karo (CSS vars — base.css overrides)
+  document.documentElement.style.setProperty('--sq-light', savedLightSq);
+  document.documentElement.style.setProperty('--sq-dark',  savedDarkSq);
+
   // ── Play state & constants — declared early to avoid TDZ errors ──
   const HASH_MAP = [16, 32, 64, 128, 256, 512, 1024];
 
@@ -127,7 +135,7 @@
     onDragStart: onDragStart,
     onDrop: onDrop,
     onSnapEnd: onSnapEnd,
-    pieceTheme: 'img/chesspieces/wikipedia/{piece}.png',
+    pieceTheme: getPieceTheme(savedPieceSet),
     moveSpeed: 'fast',
     snapbackSpeed: 300,
     snapSpeed: 80
@@ -135,6 +143,40 @@
 
 
   
+  // ── Settings: piece set runtime switch (Settings tab se call hota hai) ──
+  function getPieceTheme(setName) {
+    const ext = (setName === 'wikipedia') ? 'png' : 'svg';
+    return `img/chesspieces/${setName}/{piece}.${ext}`;
+  }
+
+  window.applyPieceSet = function(setName) {
+    localStorage.setItem('pieceSet', setName);
+    // Active tab ke hisaab se sahi position wapas lao
+    let fen = game.fen();
+    const activeTab = document.querySelector('.tab-content.active');
+    if (activeTab && activeTab.id === 'tab-play') {
+      if (typeof pzState !== 'undefined' && pzState && pzState.active && pzState.game) fen = pzState.game.fen();
+      else if (typeof playGame !== 'undefined' && playGame) fen = playGame.fen();
+    }
+    board.destroy();
+    board = Chessboard('board', {
+      draggable: true,
+      position: fen,
+      onDragStart: onDragStart,
+      onDrop: onDrop,
+      onSnapEnd: onSnapEnd,
+      pieceTheme: getPieceTheme(setName),
+      moveSpeed: 'fast',
+      snapbackSpeed: 300,
+      snapSpeed: 80
+    });
+    // Flip state restore karo (raw flip — wrapper abhi nahi laga)
+    if (boardFlipped) { const _of = board.flip.bind(board); _of(); }
+    // Tap/position/flip hooks naye board instance par dobara lagao
+    wrapBoardTapHooks();
+    setTimeout(attachBoardTapHandlers, 100);
+  };
+
   function getPromotionPiece() {
     const pieces = ['q', 'r', 'b', 'n'];
     let choice = prompt('Promote to: Queen (q), Rook (r), Bishop (b), Knight (n)', 'q');
@@ -290,20 +332,23 @@
     });
   }
 
-  // Chessboard.js re-renders the DOM on position change, so re-attach after each update
-  const _origPosition = board.position.bind(board);
-  board.position = function(...args) {
-    const result = _origPosition(...args);
-    setTimeout(attachBoardTapHandlers, 80);
-    return result;
-  };
-
-  // Also re-attach after flip — override board.flip to re-attach handlers
-  const _origFlip = board.flip.bind(board);
-  board.flip = function() {
-    _origFlip();
-    setTimeout(attachBoardTapHandlers, 100);
-  };
+  // Chessboard.js re-renders the DOM on position change, so re-attach after each update.
+  // Function mein wrap kiya hai — applyPieceSet ke board re-init ke baad dobara lagana hota hai.
+  function wrapBoardTapHooks() {
+    const _origPosition = board.position.bind(board);
+    board.position = function(...args) {
+      const result = _origPosition(...args);
+      setTimeout(attachBoardTapHandlers, 80);
+      return result;
+    };
+    // Also re-attach after flip — override board.flip to re-attach handlers
+    const _origFlip = board.flip.bind(board);
+    board.flip = function() {
+      _origFlip();
+      setTimeout(attachBoardTapHandlers, 100);
+    };
+  }
+  wrapBoardTapHooks();
 
   // Attach initially after board renders
   setTimeout(attachBoardTapHandlers, 200);

@@ -103,3 +103,12 @@
 
 /* ── Animations ── */
   @keyframes pulse { from { opacity: 0.2; } to { opacity: 1; } }
+
+/* ── Board square colors (Settings tab se customizable) ── */
+  :root {
+    --sq-light: #f0d9b5;
+    --sq-dark:  #b58863;
+  }
+  /* chessboard-1.0.0 ke square classes — vars use karo taaki Settings se change ho sake */
+  .white-1e1d7 { background-color: var(--sq-light) !important; }
+  .black-3c85d { background-color: var(--sq-dark)  !important; }
