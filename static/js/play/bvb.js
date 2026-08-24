@@ -348,6 +348,8 @@ function bvbHandleGameOver() {
 
   // Tournament hook — Championship knockout continuation
   if (window.tourOnBvbGameOver) { try { tourOnBvbGameOver(); } catch(e) {} }
+  // Duo Fight hook
+  if (window.duoOnBvbGameOver) { try { duoOnBvbGameOver(); } catch(e) {} }
 }
 
 // ── Bot vs Bot ELO report ─────────────────────────────────────
@@ -571,6 +573,8 @@ function startBvbClock() {
         try { _reportBvbResult('0-1'); } catch(e) {}
         // Tournament hook
         if (window.tourOnBvbGameOver) { try { tourOnBvbGameOver(); } catch(e) {} }
+        // Duo Fight hook
+        if (window.duoOnBvbGameOver) { try { duoOnBvbGameOver(); } catch(e) {} }
         return;
       }
     } else {
@@ -589,6 +593,8 @@ function startBvbClock() {
         try { _reportBvbResult('1-0'); } catch(e) {}
         // Tournament hook
         if (window.tourOnBvbGameOver) { try { tourOnBvbGameOver(); } catch(e) {} }
+        // Duo Fight hook
+        if (window.duoOnBvbGameOver) { try { duoOnBvbGameOver(); } catch(e) {} }
         return;
       }
     }

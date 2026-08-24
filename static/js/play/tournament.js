@@ -14,6 +14,10 @@ let tourBots = [];           // cached full bot objects for current session
 let _tourActiveBvb = null;   // {roundIdx, matchIdx, w: playerRef, b: playerRef} while a bot match runs
 let _tourAutoTimer = null;
 
+// ── ⚔ Duo Fight state (persisted separately via /play/duo) ────
+let DF = null;               // duo fight state
+let duoBots = [];            // cached full bot objects for duo session
+
 const TOUR_START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 function _userRef() {
@@ -48,7 +52,38 @@ async function tourInit() {
   renderTournaments();
 }
 
+async function duoInit() {
+  try {
+    const res = await fetch(`${FLASK_URL}/play/duo`);
+    const data = await res.json();
+    DF = data.duo || null;
+  } catch(e) { DF = null; }
+}
+
+async function _duoSave() {
+  try {
+    await fetch(`${FLASK_URL}/play/duo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ duo: DF }),
+    });
+  } catch(e) { /* ignore */ }
+}
+
 // ── Helpers ───────────────────────────────────────────────────
+
+// Jab Duo Fight active ho aur user temporarily championship dekhna chahe
+let _duoViewTournament = false;
+function _duoShowChampionship() { _duoViewTournament = true; renderTournaments(); }
+function _duoShowFight()        { _duoViewTournament = false; renderTournaments(); }
+function _maybeAppendDuoLink(root) {
+  if (!DF) return;
+  _duoViewTournament = false; // one-shot view
+  root.insertAdjacentHTML('beforeend', `
+    <div style="text-align:center;margin-top:6px">
+      <span style="font-size:10px;color:var(--accent2);cursor:pointer" onclick="_duoShowFight()">⚔ Duo Fight par wapas jao</span>
+    </div>`);
+}
 
 function _roundLabel(roundIdx) {
   const matchesLeft = T.rounds.length - roundIdx; // rounds remaining incl. this one
@@ -94,14 +129,29 @@ async function renderTournaments() {
   document.getElementById('bvb-ingame-controls').style.display = 'none';
   hideAllDialogueBubbles();
 
-  if (!T) {
-    await _renderSetup(root);
+  // ⚔ Duo Fight active/complete → duo view (championship link ke saath)
+  if (DF && !_duoViewTournament) {
+    if (DF.status === 'complete') { _renderDuoComplete(root); return; }
+    _renderDuoActive(root);
+    if (T && T.status === 'active') {
+      root.insertAdjacentHTML('beforeend', `
+        <div style="text-align:center;margin-top:6px">
+          <span style="font-size:10px;color:var(--accent);cursor:pointer" onclick="_duoShowChampionship()">🏆 Championship dekho</span>
+        </div>`);
+    }
     return;
   }
 
-  if (T.status === 'setup') { await _renderSetup(root); return; }
-  if (T.status === 'complete') { _renderChampion(root); return; }
+  if (!T) {
+    await _renderSetup(root);
+    _maybeAppendDuoLink(root);
+    return;
+  }
+
+  if (T.status === 'setup') { await _renderSetup(root); _maybeAppendDuoLink(root); return; }
+  if (T.status === 'complete') { _renderChampion(root); _maybeAppendDuoLink(root); return; }
   _renderBracket(root);
+  _maybeAppendDuoLink(root);
 }
 
 async function _fetchTourData() {
@@ -130,6 +180,12 @@ async function _renderSetup(root) {
   const customOn = !!s.customSelect;
   const eloRangeOn = !!s.eloRangeOn;
   const eloTarget = s.eloTarget || userElo;
+  const mpp = (T && T.duoPerPlayer) || 4;
+
+  const duoOptions = [...tourBots]
+    .sort((a, b) => _botElo(a) - _botElo(b))
+    .map(b => `<option value="${b.id}">${escHtmlHtml(b.name)} (~${_botElo(b)})${b.personality ? ' 🎭' : ''}</option>`)
+    .join('');
 
   const botChecks = tourBots.map(b => `
     <label style="display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;color:var(--text1)">
@@ -206,9 +262,26 @@ async function _renderSetup(root) {
     </div>
 
     <div class="play-section">
-      <div class="play-section-header">⚔ Duo Fight</div>
-      <div class="play-section-body" style="text-align:center;padding:18px 10px">
-        <div style="font-size:11px;color:var(--text3)">2v2 team battles — coming soon 🚧</div>
+      <div class="play-section-header">⚔ Duo Fight
+        <span style="float:right;font-size:10px;font-weight:400;color:var(--text3)">🤖 Bot vs 👤 You · Score Battle</span>
+      </div>
+      <div class="play-section-body" style="gap:10px">
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">🤖 Bot chuno — koi bhi Elo chalega</div>
+          <select id="duo-bot-select" class="play-input" style="width:100%">
+            ${(duoOptions || '<option value="">— koi bot nahi —</option>')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">🎯 Matches per player — <b id="duo-mpp-label" style="color:var(--accent)">${mpp}</b></div>
+          <input type="range" min="1" max="20" step="1" value="${mpp}" id="duo-mpp-slider"
+            oninput="document.getElementById('duo-mpp-label').textContent=this.value" style="width:100%">
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Total matches = <b>2 × per player</b> · 🤖 Bot pehle khelega</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);background:var(--bg2,#222);border-radius:6px;padding:6px 10px;border:1px solid var(--border,#333)">
+          <span>🏆 Win +5</span><span>🤝 Draw +2</span><span>❌ Loss −3</span>
+        </div>
+        <button class="btn primary" onclick="startDuoFight()">⚔ Start Duo Fight</button>
       </div>
     </div>
 
@@ -911,6 +984,472 @@ async function abandonTournament(confirmFirst) {
 
 // ── Boot ──────────────────────────────────────────────────────
 
+// ============================================================
+// ⚔ DUO FIGHT — Bot vs User score battle
+//
+// - 2 participants: ek Bot + user
+// - Dono apni-apni Elo ke according auto-selected opponents ke
+//   against khelte hain (aapas mein nahi)
+// - Matches per player = N → total 2N matches, bot pehle, alternate
+// - Scoring: Win +5 / Draw +2 / Loss −3
+// - Tie → extra matches (no limit) jab tak clear winner na ho
+// ============================================================
+
+const DUO_POINTS = { win: 5, draw: 2, loss: -3 };
+
+function _duoPts(who) {
+  return DF.matches.filter(m => m.who === who)
+    .reduce((s, m) => s + (m.result ? DUO_POINTS[m.result] : 0), 0);
+}
+
+function _duoCur() {
+  if (!DF || DF.status !== 'active') return null;
+  const idx = DF.matches.findIndex(m => !m.result);
+  return idx === -1 ? null : { idx, match: DF.matches[idx] };
+}
+
+// Participant ke Elo ke aas-paas opponent bot pick karo (top-5 closest mein se random)
+function _duoPickOpponent(targetElo, excludeId) {
+  if (!duoBots.length) return null;
+  const pool = duoBots.filter(b => b.id !== excludeId);
+  if (!pool.length) return null;
+  pool.sort((a, b) => Math.abs(_botElo(a) - targetElo) - Math.abs(_botElo(b) - targetElo));
+  const top = pool.slice(0, Math.min(5, pool.length));
+  const b = top[Math.floor(Math.random() * top.length)];
+  return { type: 'bot', id: b.id, name: b.name, elo: _botElo(b) };
+}
+
+async function startDuoFight() {
+  if (DF && DF.status === 'active' && !confirm('Chalu Duo Fight replace karke naya start karein?')) return;
+
+  duoBots = await _fetchTourData();
+  if (!duoBots.length) { alert('Koi bot nahi mila — pehle Make Bot se banao!'); return; }
+  if (duoBots.length < 2) { alert('Duo Fight mein opponents bhi chahiye — kam se kam 2 bots hone chahiye!'); return; }
+
+  const bot = duoBots.find(b => b.id === document.getElementById('duo-bot-select')?.value);
+  if (!bot) { alert('Pehle bot select karo!'); return; }
+  const mpp = Math.max(1, Math.min(20, parseInt(document.getElementById('duo-mpp-slider')?.value) || 4));
+
+  // Match settings — setup panel ke user/bot match settings reuse karo
+  const settings = {
+    userTimeOn:   !!document.getElementById('tour-user-time-on')?.checked,
+    userMinutes:  Math.max(1, Math.min(180, parseInt(document.getElementById('tour-user-time-min')?.value) || 10)),
+    userStartPgn: '',
+    featUndo:       document.getElementById('tour-feat-undo')?.checked !== false,
+    featHint:       document.getElementById('tour-feat-hint')?.checked !== false,
+    featEvalbar:    !!document.getElementById('tour-feat-evalbar')?.checked,
+    featThreat:     !!document.getElementById('tour-feat-threat')?.checked,
+    featSuggestion: document.getElementById('tour-feat-suggestion')?.checked !== false,
+    bvbTimeOn:   !!document.getElementById('tour-bvb-time-on')?.checked,
+    bvbMinutes:  Math.max(1, Math.min(180, parseInt(document.getElementById('tour-bvb-time-min')?.value) || 5)),
+    bvbDelay:    Math.max(100, parseInt(document.getElementById('tour-bvb-delay')?.value) || 500),
+    bvbStartPgn: '',
+  };
+
+  const userRef = _userRef();
+  // Turn order: bot pehle → [bot, user, bot, user, ...] = 2 × mpp matches
+  const matches = [];
+  for (let i = 0; i < mpp; i++) {
+    const botOpp = _duoPickOpponent(_botElo(bot), bot.id);
+    const usrOpp = _duoPickOpponent(userRef.elo, null);
+    if (!botOpp || !usrOpp) { alert('Opponents available nahi hain!'); return; }
+    matches.push({ who: 'bot',  result: null, opponent: botOpp });
+    matches.push({ who: 'user', result: null, opponent: usrOpp });
+  }
+
+  DF = {
+    status: 'active',
+    bot:  { type: 'bot', id: bot.id, name: bot.name, elo: _botElo(bot) },
+    user: userRef,
+    perPlayer: mpp,
+    settings,
+    matches,
+    winner: null,
+    archived: false,
+    created: Date.now(),
+  };
+
+  await _duoSave();
+  renderTournaments();
+}
+
+// ── Active duo fight view ─────────────────────────────────────
+
+function _renderDuoActive(root) {
+  const cur = _duoCur();
+  const botScore = _duoPts('bot');
+  const userScore = _duoPts('user');
+  const escN = escHtmlHtml;
+
+  let actionHtml;
+  if (!cur) {
+    actionHtml = `<div style="font-size:12px;color:var(--text2);text-align:center">⏳ Result calculate ho raha hai...</div>`;
+  } else if (cur.match.who === 'bot') {
+    actionHtml = `
+      <div style="font-size:12px;color:var(--text2)">🤖 <b>${escN(DF.bot.name)}</b> Match ${cur.idx + 1} khelega vs <b>${escN(cur.match.opponent.name)}</b> (~${cur.match.opponent.elo})</div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="duoWatchBotMatch()">👀 Watch Match</button>
+        <button class="btn" onclick="duoSkipBotMatch()">⏭ Skip to Result</button>
+      </div>`;
+  } else {
+    actionHtml = `
+      <div style="font-size:12px;color:var(--accent);font-weight:600">🎯 Tumhari match hai! vs <b>${escN(cur.match.opponent.name)}</b> (~${cur.match.opponent.elo})</div>
+      <button class="btn primary" onclick="duoPlayUserMatch()">▶ Play Match</button>`;
+  }
+
+  const rows = DF.matches.map((m, i) => {
+    const isExtra = i >= 2 * DF.perPlayer;
+    const label = isExtra ? `🔁 Extra ${i - 2 * DF.perPlayer + 1}` : `Match ${Math.floor(i / 2) + 1}`;
+    const icon = m.who === 'bot' ? '🤖' : '👤';
+    const who = m.who === 'bot' ? DF.bot.name : DF.user.name;
+    const isCur = cur && cur.idx === i;
+    const resMap = { win: '✅ Win', draw: '🤝 Draw', loss: '❌ Loss' };
+    const resTxt = m.result
+      ? `${resMap[m.result]} <b style="color:${DUO_POINTS[m.result] > 0 ? 'var(--accent2)' : 'var(--danger)'}">(${DUO_POINTS[m.result] > 0 ? '+' : ''}${DUO_POINTS[m.result]})</b>`
+      : isCur ? '<span style="color:var(--accent)">▶ ab</span>' : '<span style="color:var(--text3)">—</span>';
+    const bg = isCur ? 'background:rgba(120,160,255,.08);border-color:var(--accent)' : '';
+    return `<div style="display:flex;justify-content:space-between;gap:6px;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border,#333);${bg}">
+      <span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        ${label} · ${icon} <b>${escN(who)}</b> <span style="color:var(--text3)">vs ${escN(m.opponent.name)} (~${m.opponent.elo})</span>
+      </span>
+      <span style="flex-shrink:0">${resTxt}</span>
+    </div>`;
+  }).join('');
+
+  root.innerHTML = `
+    <div class="play-section">
+      <div class="play-section-header">⚔ Duo Fight
+        <span style="float:right;font-size:10px;font-weight:400;color:var(--text3)">${DF.perPlayer} per player · ${DF.matches.length} total</span>
+      </div>
+      <div class="play-section-body" style="gap:10px">
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;background:var(--bg3);border:1px solid var(--border,#333);border-radius:10px;padding:12px">
+          <div style="text-align:center">
+            <div style="font-size:16px">🤖</div>
+            <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escN(DF.bot.name)}</div>
+            <div style="font-size:9px;color:var(--text3)">~${DF.bot.elo}</div>
+          </div>
+          <div style="font-size:18px;font-weight:800;color:var(--accent)">
+            ${botScore} <span style="color:var(--text3);font-weight:400">:</span> ${userScore}
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:16px">👤</div>
+            <div style="font-size:11px;font-weight:700">${escN(DF.user.name)}</div>
+            <div style="font-size:9px;color:var(--text3)">~${DF.user.elo}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto">${rows}</div>
+        <div style="border-top:1px solid var(--border,#333);padding-top:10px;display:flex;flex-direction:column;gap:8px">${actionHtml}</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:6px">
+      <span style="font-size:10px;color:var(--danger);cursor:pointer" onclick="abandonDuoFight()">🗑 Abandon Duo Fight</span>
+    </div>`;
+}
+
+// ── Complete duo fight view ───────────────────────────────────
+
+function _renderDuoComplete(root) {
+  const w = DF.winner;
+  const isUserWin = w && w.type === 'user';
+  root.innerHTML = `
+    <div class="play-section" style="text-align:center;padding:36px 20px">
+      <div style="font-size:56px;margin-bottom:10px">🏆</div>
+      <div style="font-size:20px;font-weight:800;color:var(--accent)">${w ? escHtmlHtml(w.name) : '?'} WINS!</div>
+      <div style="font-size:12px;color:var(--text2);margin:6px 0 6px">
+        ⚔ Duo Fight — 🤖 ${escHtmlHtml(DF.bot.name)} <b>${_duoPts('bot')}</b> : <b>${_duoPts('user')}</b> 👤 ${escHtmlHtml(DF.user.name)}
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:16px">
+        ${isUserWin ? '🎉 Tum Duo Fight jeet gaye!' : 'Bot ne Duo Fight jeet liya'}
+      </div>
+      <div class="btn-row" style="justify-content:center">
+        <button class="btn primary" onclick="abandonDuoFightSilent()">🆕 New Duo Fight</button>
+      </div>
+    </div>`;
+}
+
+// ── Match progression ────────────────────────────────────────
+
+async function _duoAfterResult() {
+  const cur = _duoCur();
+  if (cur) {
+    await _duoSave();
+    tourReturnToBracket();
+    renderTournaments();
+    return;
+  }
+
+  // Saare matches complete — tie check
+  const bs = _duoPts('bot'), us = _duoPts('user');
+  if (bs === us) {
+    // 🔁 Extra match — turn order alternate hoti rahegi (even count → bot pehle)
+    const nextWho = DF.matches.length % 2 === 0 ? 'bot' : 'user';
+    const targetElo = nextWho === 'bot'
+      ? DF.bot.elo
+      : ((typeof playerProfile !== 'undefined' && playerProfile) ? playerProfile.elo || 1200 : 1200);
+    const opp = _duoPickOpponent(targetElo, nextWho === 'bot' ? DF.bot.id : null);
+    if (opp) {
+      DF.matches.push({ who: nextWho, result: null, opponent: opp });
+      await _duoSave();
+      tourReturnToBracket();
+      renderTournaments();
+      setPlayStatus('🔁 Score tied! Extra match add hua...');
+      return;
+    }
+    // Koi opponent nahi bacha — higher Elo ko winner man lo
+    DF.winner = DF.bot.elo >= DF.user.elo ? { ...DF.bot } : { ...DF.user };
+  } else {
+    DF.winner = bs > us ? { ...DF.bot } : { ...DF.user };
+  }
+
+  DF.status = 'complete';
+  if (!DF.archived) { DF.archived = true; _archiveDuo(); }
+  await _duoSave();
+  tourReturnToBracket();
+  renderTournaments();
+}
+
+async function _archiveDuo() {
+  const pName = m => m.result
+    ? (m.result === 'win' ? (m.who === 'bot' ? DF.bot.name : DF.user.name) : m.opponent.name)
+    : null;
+  const entry = {
+    id: Date.now(),
+    finishedAt: Date.now(),
+    size: 2,
+    mode: 'duo',
+    champion: DF.winner ? { name: DF.winner.name, type: DF.winner.type, elo: DF.winner.elo } : null,
+    userWon: !!(DF.winner && DF.winner.type === 'user'),
+    top5: [],
+    matches: DF.matches.map((m, i) => ({
+      round: i < 2 * DF.perPlayer ? `M${Math.floor(i / 2) + 1}` : `Extra ${i - 2 * DF.perPlayer + 1}`,
+      p1: m.who === 'bot' ? DF.bot.name : DF.user.name,
+      p2: m.opponent.name,
+      winner: pName(m),
+    })),
+  };
+  try {
+    await fetch(`${FLASK_URL}/play/tournament/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry }),
+    });
+  } catch(e) { /* ignore */ }
+}
+
+// ── Bot match — Watch (real BvB game) ────────────────────────
+
+async function duoWatchBotMatch() {
+  const cur = _duoCur();
+  if (!cur || cur.match.who !== 'bot') return;
+
+  try {
+    const res = await fetch(`${FLASK_URL}/play/bots`);
+    duoBots = (await res.json()).bots || [];
+  } catch(e) { /* keep cache */ }
+  const meBot     = duoBots.find(b => b.id === DF.bot.id) || null;
+  const oppBotObj = duoBots.find(b => b.id === cur.match.opponent.id) || null;
+  // Agar opponent delete ho gaya toh naya pick karo
+  if (!oppBotObj) {
+    const re = _duoPickOpponent(DF.bot.elo, DF.bot.id);
+    if (re) { cur.match.opponent = re; }
+  }
+  const oppRef = cur.match.opponent;
+
+  const BS = DF.settings || {};
+  const timeOn = !!BS.bvbTimeOn;
+  const mins   = Math.max(1, Math.min(180, parseInt(BS.bvbMinutes) || 5));
+  const timeMs = timeOn ? mins * 60000 : 0;
+
+  // Random colours each match
+  const wP = Math.random() < 0.5 ? DF.bot : oppRef;
+  const bP = wP === DF.bot ? oppRef : DF.bot;
+
+  clearArrows();
+  board.position(TOUR_START_FEN);
+  if (boardFlipped) { board.flip(); boardFlipped = false; }
+
+  bvbGame = new Chess();
+  bvbState = {
+    active: true, paused: false,
+    whiteBotId: wP.id, blackBotId: bP.id,
+    whiteMs: timeMs, blackMs: timeMs,
+    timeControl: timeOn,
+    delay: Math.max(100, parseInt(BS.bvbDelay) || 500),
+    clockInterval: null,
+    moveLog: [], _turnStartedAt: Date.now(), _pausedAccum: 0,
+    openingLocked: null,
+  };
+  window._duoBvbCtx = { matchIdx: cur.idx, w: wP, b: bP };
+
+  _showBoardForPlay();
+  document.getElementById('bvb-ingame-controls').style.display = 'flex';
+  document.getElementById('bvb-game-over-banner').style.display = 'none';
+  document.getElementById('bvb-nav-row').classList.add('disabled');
+  document.getElementById('bvb-browse-label').textContent = '';
+  setBvbStatus('');
+
+  document.getElementById('clock-player-label').textContent = '♙ ' + wP.name;
+  document.getElementById('clock-bot-label').textContent    = '♟ ' + bP.name;
+  document.getElementById('clock-top-row').classList.add('show');
+  document.getElementById('clock-bottom-row').classList.add('show');
+  document.getElementById('clock-bot-time').style.display    = timeOn ? '' : 'none';
+  document.getElementById('clock-player-time').style.display = timeOn ? '' : 'none';
+  document.getElementById('bot-dialogue-bubble-bottom').style.display = 'none';
+  updateBvbCapturedDisplay();
+  updateBvbTurnDot('w');
+
+  hideAllDialogueBubbles();
+  bvbWhiteEngine.reset(meBot, TOUR_START_FEN, { position: 'bottom', fixedColor: 'w', botLabel: wP.name });
+  bvbBlackEngine.reset(oppBotObj, TOUR_START_FEN, { position: 'top',    fixedColor: 'b', botLabel: bP.name });
+
+  if (timeOn) { updateBvbClocks(); startBvbClock(); }
+  bvbNextMove();
+}
+
+// Hook from bvbHandleGameOver()
+async function duoOnBvbGameOver() {
+  const ctx = window._duoBvbCtx;
+  if (!ctx) return;
+  window._duoBvbCtx = null;
+
+  const m = DF.matches[ctx.matchIdx];
+
+  let outcome; // duo bot ki perspective se
+  if (bvbGame.in_checkmate()) {
+    const winnerColor = bvbGame.turn() === 'w' ? 'b' : 'w';
+    outcome = (ctx.w === DF.bot) === (winnerColor === 'w') ? 'win' : 'loss';
+  } else if (!bvbGame.game_over()) {
+    // Time-out — jiski chaal thi uska clock zero hua → wahi haara
+    const loserColor = bvbGame.turn();
+    outcome = (ctx.w === DF.bot) === (loserColor === 'w') ? 'loss' : 'win';
+  } else {
+    outcome = 'draw';
+  }
+
+  m.result = outcome;
+  await _duoAfterResult();
+}
+
+// ── Bot match — Skip (Elo-based simulation) ──────────────────
+
+function _duoSimResult(pElo, oElo) {
+  const exp = 1 / (1 + Math.pow(10, (oElo - pElo) / 400));
+  if (Math.random() < 0.15) return 'draw';
+  return Math.random() < exp ? 'win' : 'loss';
+}
+
+async function duoSkipBotMatch() {
+  const cur = _duoCur();
+  if (!cur || cur.match.who !== 'bot') return;
+  if (!confirm('Ye match simulate karke result le lein?')) return;
+  cur.match.result = _duoSimResult(DF.bot.elo, cur.match.opponent.elo);
+  await _duoAfterResult();
+}
+
+// ── User match (reuses Play-vs-Bot machinery) ────────────────
+
+async function duoPlayUserMatch() {
+  const cur = _duoCur();
+  if (!cur || cur.match.who !== 'user') return;
+  const opp = cur.match.opponent;
+  const playerColor = Math.random() < 0.5 ? 'w' : 'b';
+
+  const US = DF.settings || {};
+  const userTimeOn = !!US.userTimeOn;
+  const userMins   = Math.max(1, Math.min(180, parseInt(US.userMinutes) || 10));
+  const timeMs     = userTimeOn ? userMins * 60000 : 0;
+
+  playState = {
+    active: true,
+    botId: opp.id,
+    botName: opp.name,
+    playerColor,
+    timeControl: userTimeOn,
+    timeMinutes: userMins,
+    playerMs: timeMs, botMs: timeMs,
+    features: {
+      undo:       US.featUndo !== false,
+      hint:       US.featHint !== false,
+      evalbar:    !!US.featEvalbar,
+      threat:     !!US.featThreat,
+      suggestion: US.featSuggestion !== false,
+    },
+    pgn: '', fen: TOUR_START_FEN, startFen: TOUR_START_FEN,
+    status: 'playing', result: null,
+    moveLog: [],
+    _turnStartedAt: Date.now(),
+    openingLocked: null,
+  };
+  window.DUO_CTX = { matchIdx: cur.idx };
+
+  _showBoardForPlay();
+  initPlayBoard();
+  showIngameUI();
+
+  hideAllDialogueBubbles();
+  try {
+    const res = await fetch(`${FLASK_URL}/play/bots`);
+    duoBots = (await res.json()).bots || [];
+  } catch(e) { /* keep cache */ }
+  let oppBot = duoBots.find(b => b.id === opp.id) || null;
+  if (!oppBot) {
+    const re = _duoPickOpponent((typeof playerProfile !== 'undefined' && playerProfile) ? playerProfile.elo || 1200 : 1200, null);
+    if (re) { cur.match.opponent = re; playState.botId = re.id; playState.botName = re.name; oppBot = duoBots.find(b => b.id === re.id) || null; }
+  }
+
+  personalityEngine.reset(oppBot, TOUR_START_FEN, { position: 'top', botLabel: cur.match.opponent.name });
+  if (oppBot && oppBot.personality) personalityEngine.onGameStart(playGame, TOUR_START_FEN);
+
+  if (playGame.turn() !== playerColor) {
+    setPlayStatus('Opponent is thinking...');
+    setTimeout(() => triggerBotMove(), 400);
+  } else {
+    setPlayStatus('Your turn — Duo Fight match!');
+  }
+}
+
+// Hook from checkPlayGameOver()/endGame() in play-moves.js
+async function duoOnUserGameOver(title) {
+  const ctx = window.DUO_CTX;
+  if (!ctx) return;
+  window.DUO_CTX = null;
+
+  fetch(`${FLASK_URL}/play/game`, { method: 'DELETE' }).catch(() => {});
+
+  const m = DF.matches[ctx.matchIdx];
+  const playerColorWord = playState.playerColor === 'w' ? 'white' : 'black';
+
+  let outcome;
+  if (/resign/i.test(title)) outcome = 'loss';
+  else if (playGame.in_checkmate()) {
+    const winnerColor = playGame.turn() === 'w' ? 'black' : 'white';
+    outcome = winnerColor === playerColorWord ? 'win' : 'loss';
+  }
+  else if (playGame.in_draw && playGame.in_draw()) outcome = 'draw';
+  else if (/you win/i.test(title)) outcome = 'win';
+  else if (/draw/i.test(title)) outcome = 'draw';
+  else outcome = 'loss';
+
+  m.result = outcome;
+  await _duoAfterResult();
+}
+
+// ── Abandon ──────────────────────────────────────────────────
+
+async function abandonDuoFight() {
+  if (!confirm('Duo Fight abandon kar dein?')) return;
+  abandonDuoFightSilent();
+}
+
+async function abandonDuoFightSilent() {
+  window._duoBvbCtx = null;
+  window.DUO_CTX = null;
+  try { await fetch(`${FLASK_URL}/play/duo`, { method: 'DELETE' }); } catch(e) {}
+  DF = null;
+  tourReturnToBracket();
+  renderTournaments();
+}
+
 // ── Tournament History view ───────────────────────────────────
 
 async function renderTourHistoryView() {
@@ -1011,4 +1550,7 @@ async function tourDeleteHistory() {
   renderTourHistoryView();
 }
 
-document.addEventListener('DOMContentLoaded', () => setTimeout(tourInit, 300));
+document.addEventListener('DOMContentLoaded', () => setTimeout(async () => {
+  await duoInit();
+  await tourInit(); // renderTournaments() duo state ko dekh lega
+}, 300));

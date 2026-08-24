@@ -18,6 +18,7 @@ tournament_bp = Blueprint("tournament", __name__)
 BASE_DIR = "/sdcard/C"
 DATA_DIR = os.path.join(BASE_DIR, "play_data")
 TOURNAMENT_FILE = os.path.join(DATA_DIR, "tournament.json")
+DUO_FILE = os.path.join(DATA_DIR, "duo.json")
 TOURNEY_HISTORY_FILE = os.path.join(DATA_DIR, "tournament_history.json")
 
 MAX_HISTORY_ENTRIES = 50
@@ -48,6 +49,36 @@ def delete_tournament():
     try:
         if os.path.exists(TOURNAMENT_FILE):
             os.remove(TOURNAMENT_FILE)
+    except OSError:
+        pass
+    return jsonify({"ok": True})
+
+
+# ==========================================================================
+#  DUO FIGHT STATE (Bot vs User — separate mode, survives page reloads)
+# ==========================================================================
+
+@tournament_bp.route("/play/duo", methods=["GET"])
+def get_duo():
+    data = load_json_file(DUO_FILE)
+    return jsonify({"duo": data if isinstance(data, dict) else None})
+
+
+@tournament_bp.route("/play/duo", methods=["POST"])
+def save_duo():
+    data = request.get_json(silent=True) or {}
+    d = data.get("duo")
+    if not isinstance(d, dict):
+        return jsonify({"error": "duo object required"}), 400
+    save_json_file(DUO_FILE, d)
+    return jsonify({"ok": True})
+
+
+@tournament_bp.route("/play/duo", methods=["DELETE"])
+def delete_duo():
+    try:
+        if os.path.exists(DUO_FILE):
+            os.remove(DUO_FILE)
     except OSError:
         pass
     return jsonify({"ok": True})

@@ -275,6 +275,8 @@ function checkPlayGameOver() {
 
   // Tournament hook — Championship knockout continuation
   if (window.tourOnUserGameOver) { try { tourOnUserGameOver(title); } catch(e) {} }
+  // Duo Fight hook
+  if (window.duoOnUserGameOver) { try { duoOnUserGameOver(title); } catch(e) {} }
 }
 
 function endGame(title, reason) {
@@ -291,6 +293,8 @@ function endGame(title, reason) {
 
   // Tournament hook — Championship knockout continuation
   if (window.tourOnUserGameOver) { try { tourOnUserGameOver(title); } catch(e) {} }
+  // Duo Fight hook
+  if (window.duoOnUserGameOver) { try { duoOnUserGameOver(title); } catch(e) {} }
 }
 
 async function resignGame() {
