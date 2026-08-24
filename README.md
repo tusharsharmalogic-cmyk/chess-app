@@ -1,6 +1,6 @@
 # ♟️ Chess Analyzer & Play App (v7)
 
-Ek full-featured chess web app — **analysis, engine play, bot building, puzzles aur game review** — sab ek jagah.
+Ek full-featured chess web app — **analysis, engine play, bot building, puzzles, game review aur tournament** — sab ek jagah.
 Backend **Python (Flask) + Stockfish** par chalta hai, frontend pure **vanilla JS** (jQuery + chess.js + chessboard.js) par bana hai.
 App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` base dir), lekin kisi bhi Linux/Mac system par chal jayegi.
 
@@ -39,7 +39,13 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 - Move delay slider (1–3000 ms), optional time control
 - Pause/Resume, Stop, paused state mein move browsing, live PGN copy
 
-### 🧩 Tactics Puzzle Mode (NEW)
+### 🏆 Tournament Mode (NEW)
+- Multiple bots ka **round-robin / elimination** tournament client-side run hota hai
+- Tournament state server par persist hota hai — page reload par bhi resume hoti hai
+- Completed tournaments ka **history** (max 50 entries) save hota hai
+- History se koi bhi past tournament detail dekho ya delete karo
+
+### 🧩 Tactics Puzzle Mode
 - **Lichess puzzle API** se puzzles fetch karo ya **CSV puzzle DB import** karo (max 3000 stored)
 - Main board par hi solve karo — tap-to-move system
 - **Points system**: first solve par max **5 points**
@@ -47,6 +53,12 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 - **Daily tracking** — per-day points & solves, plus **Best Day** stats
 - Per-puzzle stats: solved status, attempts, best time
 - In-game HUD: timer, Give Up, Next unsolved, Exit (tab switch par timer pause)
+
+### 📥 Game Import — Lichess & Chess.com Pull (NEW)
+- **Lichess**: username save karo → public Lichess API se games directly pull karo (no token needed)
+- **Chess.com**: username save karo → public Chess.com API se games pull karo (no token needed)
+- Max games limit configurable; pulled games `imported_games.json` mein store hote hain
+- Imported games History tab mein available hote hain — Analysis ya Review mein open karo
 
 ### 📊 Game Review
 - SSE-based streaming game analysis (depth + think-time dono limits ke saath)
@@ -98,15 +110,18 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 │                         # static serving, blueprints register — port 5050
 ├── helpers.py            # Phase detection (book.bin/Syzygy), ELO calc, Lucas formulas,
 │                         # tactical motifs, strategic tags, quality classification
-├── index.html            # HTML skeleton (1291 lines) + saare CSS/JS links
+├── index.html            # HTML skeleton + saare CSS/JS links
 │
 ├── routes/
 │   ├── play.py           # Bot CRUD, personality, game state, history, player profile,
-│   │                     # ELO update, bot move, hint, classify, check-opening
+│   │                     # ELO update, bot move, hint, classify, check-opening, bvb-result
 │   ├── review.py         # SSE game analysis stream, review history CRUD
 │   ├── imported.py       # Imported PGN games — add, list, delete
-│   └── puzzles.py        # Puzzle fetch (Lichess API), CSV import, solve/result,
-│                         # points + daily tracking + global stats
+│   ├── puzzles.py        # Puzzle fetch (Lichess API), CSV import, solve/result,
+│   │                     # points + daily tracking + global stats
+│   ├── tournament.py     # Tournament state persist/restore + completed tournament history
+│   ├── lichess_pull.py   # Lichess username save + public API se games pull
+│   └── chesscom_pull.py  # Chess.com username save + public API se games pull
 │
 ├── img/
 │   └── chesspieces/
@@ -147,8 +162,11 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 │
 └── play_data/            # Auto-generated runtime data (touch mat karna)
     ├── bots.json · profile.json · history.json
-    ├── imported.json · review_history.json
-    └── puzzles.json (+stats)
+    ├── imported.json · imported_games.json · review_history.json
+    ├── puzzles.json (+stats)
+    ├── tournament.json · tournament_history.json
+    ├── lichess_pull.json · chesscom_pull.json
+    └── *.corrupt         # Atomic-write backup (app kill mid-save par)
 ```
 
 > **Note:** Production/Termux setup mein `BASE_DIR = /sdcard/C` hota hai — `play_data/` aur `book.bin` wahin rakhe jaate hain.
@@ -189,7 +207,7 @@ Phir browser mein kholo: **`http://localhost:5050`**
   ```bash
   STOCKFISH_PATH=/path/to/stockfish python c.py
   ```
-- Opening book: Polyglot `book.bin` (e.g. gm2001.bin) ko base dir mein rakho — na ho to move-count fallback chalega.
+- Opening book: Polyglot `book.bin` (e.g. gm2001.bin) ko base dir (`/sdcard/C/`) mein rakho — na ho to move-count fallback chalega.
 
 ---
 
@@ -202,6 +220,7 @@ Phir browser mein kholo: **`http://localhost:5050`**
 | `POST /validate_fen` | FEN validation |
 | `POST /classify` | Single move quality classification |
 | `/play/bots` | Bot CRUD (`GET` list, `POST` save) |
+| `/play/bots/<id>` | `DELETE` single bot |
 | `/play/bots/<id>/personality` | Personality attach/remove |
 | `/play/bots/<id>/elo` | Bot estimated ELO update |
 | `/play/game` | Current game state (get/save/delete) |
@@ -210,6 +229,7 @@ Phir browser mein kholo: **`http://localhost:5050`**
 | `/play/move` | Bot move request |
 | `/play/hint` | Hint for current position |
 | `/play/result` | Match result → ELO update |
+| `/play/bvb-result` | Bot vs Bot result save |
 | `/play/check-opening` | One-time opening detection (PGN/FEN-loaded games) |
 | `/review/analyze` | SSE streaming full-game review |
 | `/review/history` | Review history CRUD |
@@ -217,6 +237,12 @@ Phir browser mein kholo: **`http://localhost:5050`**
 | `/puzzles/list` · `/puzzles/stats` | Puzzle list + global/daily stats |
 | `/puzzles/fetch` · `/puzzles/import` | Lichess fetch / CSV import |
 | `/puzzles/result` | Solve result → points + daily tracking |
+| `/play/tournament` | Tournament state get/save/delete |
+| `/play/tournament/history` | Completed tournament history (get/add/delete) |
+| `/lichess/username` | Lichess username save/get |
+| `/lichess/pull-games` | Lichess se games pull karo |
+| `/chesscom/username` | Chess.com username save/get |
+| `/chesscom/pull-games` | Chess.com se games pull karo |
 
 ---
 
