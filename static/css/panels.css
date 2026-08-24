@@ -20,7 +20,7 @@
   .player-row {
     display: none;
     width: 100%;
-    max-width: 360px;
+    max-width: min(560px, calc(100vw - 16px));
     align-items: center;
     justify-content: space-between;
     gap: 8px;
@@ -256,7 +256,7 @@
   .captured-strip {
     display: none;
     width: 100%;
-    max-width: 360px;
+    max-width: min(560px, calc(100vw - 16px));
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: 8px;
