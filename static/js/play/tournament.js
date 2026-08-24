@@ -1539,44 +1539,31 @@ async function renderTourHistoryView() {
           const pts  = r === 'win' ? '+5' : r === 'draw' ? '+2' : r === 'loss' ? '\u22123' : '';
           const col  = r === 'win' ? 'var(--accent)' : r === 'loss' ? 'var(--danger)' : 'var(--text3)';
           return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:10px;padding:3px 0;color:var(--text2)">
-            <span>${escHtmlHtml(m.round || '?')} vs ${escHtmlHtml(m.opponent || m.p2 || '?')}${m.opponentElo ? ` (~${m.opponentElo})` : ''}</span>
-            <span style="white-space:nowrap">${icon} <b style="color:${col}">${pts}</b></span>
+            <span style="word-break:break-word">${escHtmlHtml(m.round || '?')} vs ${escHtmlHtml(m.opponent || m.p2 || '?')}${m.opponentElo ? ` (~${m.opponentElo})` : ''}</span>
+            <span style="white-space:nowrap;flex-shrink:0">${icon} <b style="color:${col}">${pts}</b></span>
           </div>`;
         };
         const botRows = norm.filter(m => m.who === 'bot').map(row).join('');
         const userRows = norm.filter(m => m.who === 'user').map(row).join('');
 
         return `<details class="play-section" style="padding:0">
-          <summary style="padding:10px 14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px">
-            <span style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px">
-              ${checkHtml(h)}\u2694 ${escHtmlHtml(h.champion ? h.champion.name : '?')} jeeta${h.userWon ? ' \u2014 Tum jeete! \ud83c\udf89' : ''}
-            </span>
-            <span style="font-size:10px;color:var(--text3);white-space:nowrap">\ud83e\udd16 <b>${bs}</b> : <b>${us}</b> \ud83d\udc64 \u00b7 ${dateStr} \u25be</span>
+          <summary style="padding:10px 12px;cursor:pointer;list-style:none">
+            <div style="font-size:12px;font-weight:600">${checkHtml(h)}\u2694 ${escHtmlHtml(h.champion ? h.champion.name : '?')} jeeta${h.userWon ? ' \u2014 Tum jeete! \ud83c\udf89' : ''}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">\ud83e\udd16 <b>${bs}</b> : <b>${us}</b> \ud83d\udc64 \u00b7 ${dateStr} \u25be</div>
           </summary>
-          <div style="padding:0 14px 12px;display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:18px;background:var(--bg2,#222);border:1px solid var(--border,#333);border-radius:8px;padding:10px">
-              <div style="text-align:center;min-width:80px">
-                <div style="font-size:11px;color:var(--text2)">\ud83e\udd16 ${escHtmlHtml(botName)}</div>
-                <div style="font-size:22px;font-weight:800;color:${botWon || (!champType && bs >= us) ? 'var(--accent)' : 'var(--text3)'}">${bs}</div>
-              </div>
-              <div style="font-size:11px;color:var(--text3);font-weight:700">VS</div>
-              <div style="text-align:center;min-width:80px">
-                <div style="font-size:11px;color:var(--text2)">\ud83d\udc64 ${escHtmlHtml(usrName)}</div>
-                <div style="font-size:22px;font-weight:800;color=${champType === 'user' ? 'var(--accent)' : 'var(--text3)'}>${us}</div>
-              </div>
+          <div style="padding:0 12px 12px">
+            <div style="background:var(--bg2,#222);border:1px solid var(--border,#333);border-radius:8px;padding:8px 10px;text-align:center;font-size:11px;color:var(--text2);margin-bottom:6px;line-height:1.7">
+              <div style="word-break:break-word">\ud83e\udd16 ${escHtmlHtml(botName)} <b style="font-size:16px;color:${botWon || (!champType && bs >= us) ? 'var(--accent)' : 'var(--text3)'}">${bs}</b></div>
+              <div style="font-size:9px;color:var(--text3);letter-spacing:.15em"> VS </div>
+              <div style="word-break:break-word">\ud83d\udc64 ${escHtmlHtml(usrName)} <b style="font-size:16px;color:${champType === 'user' ? 'var(--accent)' : 'var(--text3)'}">${us}</b></div>
             </div>
-            <div>
-              <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px">\ud83e\udd16 BOT MATCHES</div>
-              ${botRows || '<div style="font-size:10px;color:var(--text3)">\u2014</div>'}
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px">\ud83d\udc64 YOUR MATCHES</div>
-              ${userRows || '<div style="font-size:10px;color:var(--text3)">\u2014</div>'}
-            </div>
+            <div style="font-size:10px;color:var(--accent);font-weight:700;margin:8px 0 2px">\ud83e\udd16 BOT MATCHES</div>
+            ${botRows || '<div style="font-size:10px;color:var(--text3)">\u2014</div>'}
+            <div style="font-size:10px;color:var(--accent);font-weight:700;margin:10px 0 2px">\ud83d\udc64 YOUR MATCHES</div>
+            ${userRows || '<div style="font-size:10px;color:var(--text3)">\u2014</div>'}
           </div>
         </details>`;
       }
-
       // \ud83c\udfc6 Classic Championship card
       const champName = h.champion ? h.champion.name : '?';
       const champIcon = h.userWon ? '\ud83d\udc51' : '\ud83c\udfc6';

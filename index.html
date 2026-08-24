@@ -283,9 +283,6 @@
               </div>
               <button class="btn primary sm" onclick="savePlayerProfile()">💾 Save Profile</button>
             </div>
-            <div style="font-size:10px;color:var(--text3);line-height:1.5">
-              Match khatam hone par tumhari ELO automatically update hogi — bot ki "Estimated ELO" (neeche set karo) se compare karke, chess.com-style.
-            </div>
 
             <!-- Lichess Pull Section -->
             <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
@@ -367,7 +364,7 @@
             <!-- OPENING PHASE -->
             <div class="play-section" style="border-color:rgba(196,163,90,0.35);margin-top:4px">
               <div class="play-section-header" style="font-size:10px;padding:8px 12px;background:rgba(196,163,90,0.06)">
-                ♟ Opening Phase <span style="color:var(--text3);font-weight:400;font-size:9px;margin-left:4px">(Stockfish detects automatically)</span>
+                ♟ Opening Phase
               </div>
               <div class="play-section-body" style="padding:10px 12px;gap:8px">
                 <div class="play-field">
@@ -485,12 +482,6 @@
           </div>
           <div class="play-section-body" id="ib-body" style="display:none">
 
-            <div style="font-size:10px;color:var(--text3);line-height:1.6;padding:4px 0">
-              AI se generate kiya hua bot JSON yahan paste karo <b style="color:var(--text2)">ya file(s) upload karo</b>.<br>
-              <b style="color:var(--accent)">Single bot</b> ya <b style="color:var(--accent)">multiple bots array</b> — dono support hain.<br>
-              Bots automatically save ho jayenge with personality (agar ho toh).
-            </div>
-
             <!-- Hidden file input — accepts multiple .json files -->
             <input type="file" id="bot-json-file-input" accept=".json,application/json"
               multiple style="display:none" onchange="handleBotFileImport(event)">
@@ -504,7 +495,6 @@
               style="border:2px dashed rgba(196,163,90,0.3);border-radius:8px;padding:14px 10px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:rgba(196,163,90,0.03)">
               <div style="font-size:20px;margin-bottom:4px">📂</div>
               <div style="font-size:11px;color:var(--accent);font-weight:600">Tap to choose JSON file(s)</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:2px">Ya yahan drag & drop karo · Multiple files ek saath OK</div>
             </div>
 
             <!-- Selected files list -->
@@ -708,7 +698,7 @@
           <div class="play-section-header">📋 Start From PGN (optional)</div>
           <div class="play-section-body">
             <div class="play-field">
-              <textarea class="play-input" id="pb-start-pgn" placeholder="1. e4 e5 2. Nf3 Nc6 ... (leave empty for normal start)" style="min-height:70px;resize:vertical"></textarea>
+              <textarea class="play-input" id="pb-start-pgn" placeholder="1. e4 e5 2. Nf3 Nc6 ..." style="min-height:70px;resize:vertical"></textarea>
             </div>
           </div>
         </div>
@@ -798,7 +788,7 @@
           <div class="play-section-header">📋 Start From PGN (optional)</div>
           <div class="play-section-body">
             <div class="play-field">
-              <textarea class="play-input" id="bvb-start-pgn" placeholder="1. e4 e5 2. Nf3 Nc6 ... (leave empty for normal start)" style="min-height:70px;resize:vertical"></textarea>
+              <textarea class="play-input" id="bvb-start-pgn" placeholder="1. e4 e5 2. Nf3 Nc6 ..." style="min-height:70px;resize:vertical"></textarea>
             </div>
           </div>
         </div>
