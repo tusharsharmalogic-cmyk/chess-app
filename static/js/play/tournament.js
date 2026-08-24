@@ -50,6 +50,76 @@ async function tourInit() {
     T = data.tournament || null;
   } catch(e) { T = null; }
   renderTournaments();
+  // Event delegation: tournament checkboxes ki state auto-save
+  _tourAttachAutoSave();
+}
+
+// ── Tournament checkbox auto-save (event delegation) ───────────
+let _tourAutoSaveTimer = null;
+function _tourAttachAutoSave() {
+  const root = document.getElementById('tour-root');
+  if (!root || root.dataset.tourAutoSave) return;
+  root.dataset.tourAutoSave = '1';
+  root.addEventListener('change', (e) => {
+    if (e.target.type !== 'checkbox' && e.target.tagName !== 'INPUT') return;
+    _tourAutoSaveSettings();
+  });
+  root.addEventListener('input', (e) => {
+    if (e.target.type === 'range' || e.target.type === 'number') {
+      _tourAutoSaveSettings();
+    }
+  });
+}
+
+function _tourAutoSaveSettings() {
+  if (_tourAutoSaveTimer) clearTimeout(_tourAutoSaveTimer);
+  _tourAutoSaveTimer = setTimeout(() => {
+    // Agar T nahi hai toh naya settings object banao
+    if (!T) T = { status: 'setup', settings: {} };
+    if (!T.settings) T.settings = {};
+    const s = T.settings;
+
+    // Size slider
+    const slider = document.getElementById('tour-size-slider');
+    if (slider) s.size = [4, 8, 16][parseInt(slider.value)] || 8;
+
+    // Particular Bot Selection
+    const customEl = document.getElementById('tour-custom-toggle');
+    if (customEl) s.customSelect = customEl.checked;
+
+    // Custom Elo Target
+    const eloRangeEl = document.getElementById('tour-elorange-toggle');
+    if (eloRangeEl) s.eloRangeOn = eloRangeEl.checked;
+    const eloTargetEl = document.getElementById('tour-elo-target');
+    if (eloTargetEl) s.eloTarget = parseInt(eloTargetEl.value) || 1200;
+
+    // Chosen bot IDs
+    const checked = [...document.querySelectorAll('.tour-bot-check:checked')].map(el => el.value);
+    if (checked.length > 0) s.chosenBotIds = checked;
+
+    // Match settings
+    const _g = (id) => { const el = document.getElementById(id); return el ? (el.type === 'checkbox' ? !!el.checked : el.value) : undefined; };
+    s.userTimeOn    = !!document.getElementById('tour-user-time-on')?.checked;
+    s.userMinutes   = Math.max(1, Math.min(180, parseInt(document.getElementById('tour-user-time-min')?.value) || 10));
+    s.featUndo      = !!document.getElementById('tour-feat-undo')?.checked;
+    s.featHint      = !!document.getElementById('tour-feat-hint')?.checked;
+    s.featEvalbar   = !!document.getElementById('tour-feat-evalbar')?.checked;
+    s.featThreat    = !!document.getElementById('tour-feat-threat')?.checked;
+    s.featSuggestion = !!document.getElementById('tour-feat-suggestion')?.checked;
+    s.userStartPgn  = (document.getElementById('tour-user-start-pgn')?.value || '').trim();
+    s.bvbTimeOn     = !!document.getElementById('tour-bvb-time-on')?.checked;
+    s.bvbMinutes    = Math.max(1, Math.min(180, parseInt(document.getElementById('tour-bvb-time-min')?.value) || 5));
+    s.bvbDelay      = Math.max(100, parseInt(document.getElementById('tour-bvb-delay')?.value) || 500);
+    s.bvbStartPgn   = (document.getElementById('tour-bvb-start-pgn')?.value || '').trim();
+
+    // Duo fight settings bhi save karo agar dikh raha hai
+    const duoBotEl = document.getElementById('duo-bot-select');
+    if (duoBotEl) s.duoBotId = duoBotEl.value;
+    const duoMppEl = document.getElementById('duo-mpp-slider');
+    if (duoMppEl) s.duoPerPlayer = parseInt(duoMppEl.value) || 4;
+
+    _tourSave();
+  }, 400);
 }
 
 async function duoInit() {
@@ -128,6 +198,7 @@ async function renderTournaments() {
   document.getElementById('game-over-banner')?.classList.remove('show');
   document.getElementById('bvb-ingame-controls').style.display = 'none';
   hideAllDialogueBubbles();
+  _tourAttachAutoSave();
 
   // ⚔ Duo Fight active/complete → duo view (championship link ke saath)
   if (DF && !_duoViewTournament) {
