@@ -51,6 +51,9 @@
 .eval-score.positive { color: var(--accent2); }
 .eval-score.negative { color: var(--danger); }
 
+/* Board notation (rank/file labels) — chhota + subtle */
+.notation-322f9 { font-size: 9px !important; opacity: 0.35 !important; }
+
 /* Board wrapper */
 #board-wrapper {
   width: 100%;
