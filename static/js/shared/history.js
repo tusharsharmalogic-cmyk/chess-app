@@ -257,6 +257,35 @@ const depth = parseInt(document.getElementById('depth-slider').value);
     const playbotGames = _historyGames.filter(g => g.mode !== 'botvsbot');
     const bvbGames     = _historyGames.filter(g => g.mode === 'botvsbot');
 
+    function _makeGroup(icon, label, games, defaultOpen) {
+      const grp = document.createElement('div');
+      grp.className = 'hist-group';
+      if (!defaultOpen) grp.classList.add('collapsed');
+
+      const hdr = document.createElement('div');
+      hdr.className = 'hist-group-header';
+      hdr.onclick = () => grp.classList.toggle('collapsed');
+
+      const titleRow = document.createElement('div');
+      titleRow.className = 'hist-group-title';
+      titleRow.innerHTML = `${icon} ${label} <span class="hist-group-count">${games.length}</span>`;
+
+      const chevron = document.createElement('span');
+      chevron.className = 'hist-group-chevron';
+      chevron.textContent = '\u25BC';
+
+      hdr.appendChild(titleRow);
+      hdr.appendChild(chevron);
+
+      const body = document.createElement('div');
+      body.className = 'hist-group-body';
+      games.forEach(g => body.appendChild(_makeHistoryItem(g)));
+
+      grp.appendChild(hdr);
+      grp.appendChild(body);
+      return grp;
+    }
+
     function _makeHistoryItem(g) {
       const item = document.createElement('div');
       item.className = 'history-item';
@@ -338,22 +367,14 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       return item;
     }
 
-    // ── Player vs Bot section (top) ──
+    // ── Player vs Bot group ──
     if (playbotGames.length > 0) {
-      const hdr = document.createElement('div');
-      hdr.style.cssText = 'font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;padding:4px 2px 2px';
-      hdr.textContent = '♟ Player vs Bot';
-      body.appendChild(hdr);
-      playbotGames.forEach(g => body.appendChild(_makeHistoryItem(g)));
+      body.appendChild(_makeGroup('\u265F', 'Player vs Bot', playbotGames, true));
     }
 
-    // ── Bot vs Bot section (bottom) ──
+    // ── Bot vs Bot group ──
     if (bvbGames.length > 0) {
-      const hdr2 = document.createElement('div');
-      hdr2.style.cssText = 'font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;padding:10px 2px 2px;margin-top:' + (playbotGames.length > 0 ? '6px' : '0');
-      hdr2.textContent = '⚔ Bot vs Bot';
-      body.appendChild(hdr2);
-      bvbGames.forEach(g => body.appendChild(_makeHistoryItem(g)));
+      body.appendChild(_makeGroup('\u2694\uFE0F', 'Bot vs Bot', bvbGames, playbotGames.length === 0));
     }
   }
 
