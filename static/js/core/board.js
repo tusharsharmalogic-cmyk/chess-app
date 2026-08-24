@@ -7,8 +7,8 @@
 
   // ── Settings: saved appearance prefs (localStorage) ────────────────
   const savedPieceSet = localStorage.getItem('pieceSet') || 'wikipedia';
-  const savedLightSq  = localStorage.getItem('sqLight') || '#f0d9b5';
-  const savedDarkSq   = localStorage.getItem('sqDark')  || '#b58863';
+  const savedLightSq  = localStorage.getItem('sqLight') || '#f0e9d2';
+  const savedDarkSq   = localStorage.getItem('sqDark')  || '#7c5c3e';
   // Board colors ko load hote hi apply karo (CSS vars — base.css overrides)
   document.documentElement.style.setProperty('--sq-light', savedLightSq);
   document.documentElement.style.setProperty('--sq-dark',  savedDarkSq);

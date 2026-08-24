@@ -299,8 +299,8 @@
     // 5. Board color pickers
     const lightPicker = document.getElementById('sq-light-picker');
     const darkPicker  = document.getElementById('sq-dark-picker');
-    lightPicker.value = localStorage.getItem('sqLight') || '#f0d9b5';
-    darkPicker.value  = localStorage.getItem('sqDark')  || '#b58863';
+    lightPicker.value = localStorage.getItem('sqLight') || '#f0e9d2';
+    darkPicker.value  = localStorage.getItem('sqDark')  || '#7c5c3e';
 
     lightPicker.addEventListener('input', e => {
       document.documentElement.style.setProperty('--sq-light', e.target.value);
@@ -313,7 +313,7 @@
 
     // 6. Reset button — default colors
     document.getElementById('sq-reset-btn').addEventListener('click', () => {
-      const dl = '#f0d9b5', dd = '#b58863';
+      const dl = '#f0e9d2', dd = '#7c5c3e';
       lightPicker.value = dl;
       darkPicker.value  = dd;
       document.documentElement.style.setProperty('--sq-light', dl);

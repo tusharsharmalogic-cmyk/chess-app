@@ -106,8 +106,8 @@
 
 /* ── Board square colors (Settings tab se customizable) ── */
   :root {
-    --sq-light: #f0d9b5;
-    --sq-dark:  #b58863;
+    --sq-light: #f0e9d2;
+    --sq-dark:  #7c5c3e;
   }
   /* chessboard-1.0.0 ke square classes — vars use karo taaki Settings se change ho sake */
   .white-1e1d7 { background-color: var(--sq-light) !important; }

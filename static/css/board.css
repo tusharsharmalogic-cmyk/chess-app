@@ -71,9 +71,9 @@
   overflow: visible;
 }
 
-/* Chessboard.js square colors */
-.white-1e1d7 { background-color: #f0e9d2 !important; }
-.black-3c85d { background-color: #7c5c3e !important; }
+/* Chessboard.js square colors — Settings tab ke vars use karo */
+.white-1e1d7 { background-color: var(--sq-light, #f0e9d2) !important; }
+.black-3c85d { background-color: var(--sq-dark,  #7c5c3e) !important; }
 .highlight-white { box-shadow: inset 0 0 0 4px rgba(196,163,90,0.8) !important; }
 .highlight-black { box-shadow: inset 0 0 0 4px rgba(196,163,90,0.8) !important; }
 
