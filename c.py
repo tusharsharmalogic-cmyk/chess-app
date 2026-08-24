@@ -18,6 +18,7 @@ import chess
 import chess.engine
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from helpers import load_json_file, save_json_file
 
 from routes.play     import play_bp
 from routes.review   import review_bp
@@ -85,6 +86,28 @@ def root_files(filename):
 
 
 # ── Core API routes ───────────────────────────────────────────────────────────
+
+APPEARANCE_FILE = os.path.join(DATA_DIR, "appearance.json")
+
+
+@app.route("/api/appearance", methods=["GET", "POST"])
+def appearance():
+    defaults = {"pieceSet": "wikipedia", "sqLight": "#f0e9d2", "sqDark": "#7c5c3e"}
+    if request.method == "GET":
+        data = load_json_file(APPEARANCE_FILE)
+        if not data or not isinstance(data, dict):
+            data = defaults
+        return jsonify(data)
+    # POST — save
+    body = request.get_json(force=True) or {}
+    data = {
+        "pieceSet": body.get("pieceSet", "wikipedia"),
+        "sqLight":  body.get("sqLight",  "#f0e9d2"),
+        "sqDark":   body.get("sqDark",   "#7c5c3e"),
+    }
+    save_json_file(APPEARANCE_FILE, data)
+    return jsonify({"ok": True})
+
 
 @app.route("/api/piece-sets")
 def piece_sets():

@@ -5,13 +5,37 @@
 
   const FLASK_URL = 'http://localhost:5050';
 
-  // ── Settings: saved appearance prefs (localStorage) ────────────────
-  const savedPieceSet = localStorage.getItem('pieceSet') || 'wikipedia';
-  const savedLightSq  = localStorage.getItem('sqLight') || '#f0e9d2';
-  const savedDarkSq   = localStorage.getItem('sqDark')  || '#7c5c3e';
+  // ── Settings: saved appearance prefs (localStorage fallback + backend fetch) ──
+  let savedPieceSet = localStorage.getItem('pieceSet') || 'wikipedia';
+  let savedLightSq  = localStorage.getItem('sqLight')  || '#f0e9d2';
+  let savedDarkSq   = localStorage.getItem('sqDark')   || '#7c5c3e';
+  const _initPieceSet = savedPieceSet; // board init mein jo use hua
   // Board colors ko load hote hi apply karo (CSS vars — base.css overrides)
   document.documentElement.style.setProperty('--sq-light', savedLightSq);
   document.documentElement.style.setProperty('--sq-dark',  savedDarkSq);
+  // Backend se appearance fetch karo — localStorage ko sync karo taaki offline bhi chale
+  (async () => {
+    try {
+      const res = await fetch('/api/appearance');
+      const srv = await res.json();
+      if (srv && srv.pieceSet) {
+        localStorage.setItem('pieceSet', srv.pieceSet);
+        savedPieceSet = srv.pieceSet;
+      }
+      if (srv && srv.sqLight) {
+        localStorage.setItem('sqLight', srv.sqLight);
+        document.documentElement.style.setProperty('--sq-light', srv.sqLight);
+      }
+      if (srv && srv.sqDark) {
+        localStorage.setItem('sqDark', srv.sqDark);
+        document.documentElement.style.setProperty('--sq-dark', srv.sqDark);
+      }
+      // Agar server ka pieceSet alag hai toh board re-init karo
+      if (savedPieceSet !== _initPieceSet && typeof window.applyPieceSet === 'function') {
+        setTimeout(() => window.applyPieceSet(savedPieceSet), 150);
+      }
+    } catch(e) { /* offline — localStorage fallback chalega */ }
+  })();
 
   // ── Play state & constants — declared early to avoid TDZ errors ──
   const HASH_MAP = [16, 32, 64, 128, 256, 512, 1024];

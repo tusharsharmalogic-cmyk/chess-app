@@ -260,6 +260,20 @@
   //  SETTINGS TAB — piece style + board colors
   // ============================================================
 
+  // Appearance backend save helper — fire-and-forget, localStorage bhi update
+  function saveAppearance(pieceSet, sqLight, sqDark) {
+    localStorage.setItem('pieceSet', pieceSet);
+    localStorage.setItem('sqLight', sqLight);
+    localStorage.setItem('sqDark', sqDark);
+    try {
+      fetch('/api/appearance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pieceSet, sqLight, sqDark })
+      });
+    } catch(e) { /* offline — localStorage bachega */ }
+  }
+
   async function initSettingsTab() {
     // 1. Flask se piece set list fetch karo
     let sets = ['wikipedia'];
@@ -294,6 +308,7 @@
       const chosen = sel.value;
       updatePiecePreview(chosen);
       if (typeof window.applyPieceSet === 'function') window.applyPieceSet(chosen);
+      saveAppearance(chosen, lightPicker.value, darkPicker.value);
     });
 
     // 5. Board color pickers
@@ -304,11 +319,11 @@
 
     lightPicker.addEventListener('input', e => {
       document.documentElement.style.setProperty('--sq-light', e.target.value);
-      localStorage.setItem('sqLight', e.target.value);
+      saveAppearance(sel.value, e.target.value, darkPicker.value);
     });
     darkPicker.addEventListener('input', e => {
       document.documentElement.style.setProperty('--sq-dark', e.target.value);
-      localStorage.setItem('sqDark', e.target.value);
+      saveAppearance(sel.value, lightPicker.value, e.target.value);
     });
 
     // 6. Reset button — default colors
@@ -318,8 +333,7 @@
       darkPicker.value  = dd;
       document.documentElement.style.setProperty('--sq-light', dl);
       document.documentElement.style.setProperty('--sq-dark',  dd);
-      localStorage.setItem('sqLight', dl);
-      localStorage.setItem('sqDark',  dd);
+      saveAppearance(sel.value, dl, dd);
     });
   }
 
