@@ -39,7 +39,7 @@
     </div>
 
     <!-- TOP: dialogue first, then clock+captured row (closest to board) -->
-    <div id="bot-dialogue-bubble-top" class="bot-dialogue-bubble" style="display:none;width:100%;max-width:360px;background:rgba(196,163,90,0.10);border:1px solid rgba(196,163,90,0.3);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--accent);line-height:1.6;position:relative;">
+    <div id="bot-dialogue-bubble-top" class="bot-dialogue-bubble" style="display:none;width:100%;max-width:min(600px,100vw);background:rgba(196,163,90,0.06);border:1px solid rgba(196,163,90,0.3);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--accent);line-height:1.6;position:relative;">
       <span class="bot-dialogue-tag" style="font-size:9px;color:var(--text3);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.06em">🎭 <span id="bot-dialogue-name-top">Bot</span> says</span>
       <span id="bot-dialogue-text-top"></span>
     </div>
@@ -86,7 +86,7 @@
     </div>
 
     <!-- Bottom dialogue (WHITE bot in BvB; hidden in Play vs Bot) -->
-    <div id="bot-dialogue-bubble-bottom" class="bot-dialogue-bubble" style="display:none;width:100%;max-width:360px;background:rgba(196,163,90,0.10);border:1px solid rgba(196,163,90,0.3);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--accent);line-height:1.6;position:relative;">
+    <div id="bot-dialogue-bubble-bottom" class="bot-dialogue-bubble" style="display:none;width:100%;max-width:min(600px,100vw);background:rgba(196,163,90,0.06);border:1px solid rgba(196,163,90,0.3);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--accent);line-height:1.6;position:relative;">
       <span class="bot-dialogue-tag" style="font-size:9px;color:var(--text3);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.06em">🎭 <span id="bot-dialogue-name-bottom">Bot</span> says</span>
       <span id="bot-dialogue-text-bottom"></span>
     </div>
@@ -101,7 +101,7 @@
       <span class="cap-adv" id="analysis-cap-bottom-adv" style="color:var(--accent2)"></span>
     </div>
     <!-- Review: Row 6 — Move classification badge (shown during move-by-move review) -->
-    <div id="rv-classification-row" style="display:none;width:100%;max-width:360px">
+    <div id="rv-classification-row" style="display:none;width:100%;max-width:min(600px,100vw)">
       <div id="rv-classification-badge" style="text-align:center;padding:5px 12px;border-radius:6px;font-size:13px;font-weight:600;letter-spacing:0.03em"></div>
     </div>
 

@@ -16,49 +16,47 @@
   /* Clock display — chess.com style, overlaid on board edges */
   .clock-row { display: none; } /* hidden — clocks now live in board-area */
 
-  /* ── Player Row: Clock + Captured Pieces (same row) ── */
+  /* ── Player Row: Lichess-style flush, compact, flat ── */
   .player-row {
     display: none;
     width: 100%;
     max-width: min(600px, 100vw);
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 0;
+    padding: 0 4px;
+    min-height: 28px;
   }
   .player-row.show { display: flex; }
 
   .clock-box {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 5px 10px;
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
     flex-shrink: 0;
-    transition: border-color 0.2s, background 0.2s;
+    padding: 3px 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    background: transparent;
   }
   .clock-box.active {
-    border-color: var(--accent);
-    background: rgba(196,163,90,0.10);
+    background: rgba(196,163,90,0.08);
   }
   .clock-box.low {
-    border-color: var(--danger);
-    background: rgba(212,96,96,0.08);
+    background: rgba(212,96,96,0.06);
   }
   .clock-label {
-    font-size: 10px;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-size: 11px;
+    color: var(--text2);
     white-space: nowrap;
+    letter-spacing: 0.01em;
   }
   .clock-time {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 600;
-    font-family: 'Crimson Pro', serif;
+    font-family: 'JetBrains Mono', monospace;
     color: var(--text);
-    letter-spacing: 0.03em;
+    letter-spacing: 0.02em;
     white-space: nowrap;
   }
   .clock-time.low { color: var(--danger); }
@@ -90,24 +88,26 @@
     pointer-events: none;
   }
 
-  /* Captured pieces inline (right side of player-row) */
+  /* Captured pieces inline — compact, Lichess-style */
   .cap-inline {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
     flex-wrap: wrap;
     justify-content: flex-end;
     flex: 1;
-    min-height: 24px;
+    min-height: 20px;
+    opacity: 0.75;
   }
   .cap-piece {
-    font-size: 15px;
+    font-size: 13px;
     line-height: 1;
   }
   .cap-adv {
-    font-size: 10px;
-    font-weight: 700;
-    margin-left: 2px;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text3);
+    margin-left: 3px;
     flex-shrink: 0;
   }
   /* Backwards compat — hide old separate strips */

@@ -3,35 +3,36 @@
                tap-to-move highlights, chessboard.js overrides
    ============================================================ */
 
-/* Board area */
+/* Board area — Lichess-style flush, tight spacing */
 .board-area {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 6px 0;
-  gap: 10px;
+  padding: 4px 0 0;
+  gap: 0;
 }
 
-/* Eval bar */
+/* Eval bar — thin, subtle, Lichess-style */
 .eval-container {
   width: 100%;
   max-width: min(600px, 100vw);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 .eval-label {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: var(--text2);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.02em;
 }
 .eval-bar-wrap {
-  height: 8px;
+  height: 6px;
   background: var(--black-side);
-  border-radius: 4px;
+  border-radius: 3px;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: none;
 }
 .eval-bar-fill {
   height: 100%;
