@@ -281,6 +281,8 @@ async function bvbNextMove() {
     [...svg.children].forEach(el => { if (el.tagName !== 'defs') el.remove(); });
     drawArrowSVG(from, to, 'ah-last', 'rgba(128,128,128,0.9)');
     updateBvbCapturedDisplay();
+    // Tournament/Duo live match sync (resume ke liye har move save)
+    if (window._tourBvbCtx || window._duoBvbCtx) { try { tourSyncLiveBvb(); } catch(e) {} }
     if (finalData.score !== undefined) updateEvalBar(finalData.score, finalData.mate);
 
     document.getElementById('bvb-thinking').classList.remove('show');

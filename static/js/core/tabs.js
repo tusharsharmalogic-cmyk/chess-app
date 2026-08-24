@@ -121,6 +121,28 @@
         try { bvbPauseResume(); } catch(e) {}
       }
       if (playState.active) document.getElementById('copy-pgn-btn').classList.add('show');
+      // Active game (Play vs Bot / BvB / tournament) ka in-game UI restore karo —
+      // tab switch par clock rows hide ho jaate the, wapas aane par wahi dikhein
+      const _tourSubOpen = ['tournaments', 'history'].some(p => {
+        const el = document.getElementById('play-page-' + p);
+        return el && el.classList.contains('active');
+      });
+      const _pgActive = typeof playState !== 'undefined' && playState && playState.active && playState.status === 'playing';
+      const _bvActive = typeof bvbState !== 'undefined' && bvbState && bvbState.active;
+      if (!_tourSubOpen && (_pgActive || _bvActive)) {
+        document.getElementById('clock-top-row').classList.add('show');
+        document.getElementById('clock-bottom-row').classList.add('show');
+        const _tc = _bvActive ? bvbState.timeControl : playState.timeControl;
+        document.getElementById('clock-player-time').style.display = _tc ? '' : 'none';
+        document.getElementById('clock-bot-time').style.display = _tc ? '' : 'none';
+        if (_bvActive) {
+          if (typeof updateBvbCapturedDisplay === 'function') updateBvbCapturedDisplay();
+          if (typeof updateBvbClocks === 'function') updateBvbClocks();
+        } else {
+          if (typeof updateCapturedDisplay === 'function') updateCapturedDisplay();
+          if (typeof updateClocks === 'function') updateClocks();
+        }
+      }
       updatePlayBoardVisibility();
     } else if (name === 'review') {
       document.body.classList.add('review-readonly');

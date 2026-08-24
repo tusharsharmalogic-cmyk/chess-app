@@ -426,7 +426,8 @@ function _renderBracket(root) {
     </div>`;
   });
 
-  // Controls
+  // Controls (adhura live match hai toh sirf resume dikhao)
+  if (!T.live) {
   if (!T.userEliminated && cur) {
     if (_isUserMatch(cur.match)) {
       html += `<div class="play-section"><div class="play-section-body" style="gap:8px">
@@ -456,6 +457,17 @@ function _renderBracket(root) {
     html += `<div class="play-section"><div class="play-section-body" style="gap:8px">
       <div style="font-size:12px;color:var(--text2)">🔁 Draw hua — rematch zaroori hai! (${cur.match.games} games played)</div>
       <button class="btn primary" onclick="tourPlayUserMatch()">🔁 Rematch</button>
+    </div></div>`;
+  }
+
+  }
+
+  // ⏸ Adhura match — resume prompt (script restart ke baad)
+  if (T.live && T.status === 'active') {
+    const liveTxt = T.live.kind === 'bvb' ? '🤖 Bot vs Bot match board par adhoora hai' : '🎯 Tumhari match adhoori hai';
+    html += `<div class="play-section"><div class="play-section-body" style="gap:8px">
+      <div style="font-size:12px;color:var(--accent);font-weight:600">⏸ ${liveTxt} — wahi se resume karo!</div>
+      <button class="btn primary" onclick="tourResumeLive()">▶ Resume Match</button>
     </div></div>`;
   }
 
@@ -728,6 +740,8 @@ async function tourStartBotMatch(nxt) {
     openingLocked: tOpeningLocked,
   };
   window._tourBvbCtx = { roundIdx, matchIdx, w: wP, b: bP };
+  T.live = { kind: 'bvb', roundIdx, matchIdx, wId: wP.id, bId: bP.id, startFen: bvbGame.fen(), moves: [], whiteMs: bvbTimeMs, blackMs: bvbTimeMs, timeControl: bvbTimeOn, delay: bvbDelay };
+  _tourSave();
 
   _showBoardForPlay();
   document.getElementById('bvb-ingame-controls').style.display = 'flex';
@@ -761,6 +775,7 @@ async function tourOnBvbGameOver() {
   const ctx = window._tourBvbCtx;
   if (!ctx) return;
   window._tourBvbCtx = null;
+  if (T) delete T.live;
 
   const m = T.rounds[ctx.roundIdx][ctx.matchIdx];
 
@@ -835,6 +850,9 @@ async function tourPlayUserMatch() {
     openingLocked: null,
   };
   window.TOURNAMENT_CTX = { roundIdx: cur.roundIdx, matchIdx: cur.matchIdx };
+  T.live = { kind: 'user', roundIdx: cur.roundIdx, matchIdx: cur.matchIdx, botId: opp.id, botName: opp.name, playerColor };
+  _tourSave();
+  autoSavePlayState();
 
   // Tournaments page ka bracket board ke niche na dikhe
   _showBoardForPlay();
@@ -891,6 +909,7 @@ async function tourOnUserGameOver(title) {
   const ctx = window.TOURNAMENT_CTX;
   if (!ctx) return;
   window.TOURNAMENT_CTX = null;
+  if (T) delete T.live;
 
   // Tournament games ko normal resume system mein mat daalo
   fetch(`${FLASK_URL}/play/game`, { method: 'DELETE' }).catch(() => {});
@@ -937,6 +956,166 @@ async function tourOnUserGameOver(title) {
   await _afterMatchResolved();
 }
 
+// ── Live match sync + resume (script restart ke baad bhi) ─────
+
+function tourSyncLiveBvb() {
+  const live = (T && T.live && T.live.kind === 'bvb') ? T.live
+             : (DF && DF.live && DF.live.kind === 'bvb') ? DF.live : null;
+  if (!live || typeof bvbState === 'undefined' || !bvbState || !bvbState.active) return;
+  live.moves   = bvbGame.history();
+  live.whiteMs = bvbState.whiteMs;
+  live.blackMs = bvbState.blackMs;
+  if (T && T.live === live) _tourSave();
+  else if (DF && DF.live === live) _duoSave();
+}
+
+function _bvbUiShow(wP, bP, timeOn) {
+  _showBoardForPlay();
+  document.getElementById('bvb-ingame-controls').style.display = 'flex';
+  document.getElementById('bvb-game-over-banner').style.display = 'none';
+  document.getElementById('bvb-nav-row').classList.add('disabled');
+  document.getElementById('bvb-browse-label').textContent = '';
+  setBvbStatus('');
+  document.getElementById('clock-player-label').textContent = '\u2654 ' + wP.name;
+  document.getElementById('clock-bot-label').textContent    = '\u265f ' + bP.name;
+  document.getElementById('clock-top-row').classList.add('show');
+  document.getElementById('clock-bottom-row').classList.add('show');
+  document.getElementById('clock-bot-time').style.display    = timeOn ? '' : 'none';
+  document.getElementById('clock-player-time').style.display = timeOn ? '' : 'none';
+  document.getElementById('bot-dialogue-bubble-bottom').style.display = 'none';
+  updateBvbCapturedDisplay();
+  updateBvbTurnDot(bvbGame.turn() || 'w');
+  if (timeOn) { updateBvbClocks(); startBvbClock(); }
+}
+
+async function _resumeBvbGame(live, wP, bP, ctxInfo) {
+  try {
+    const res = await fetch(`${FLASK_URL}/play/bots`);
+    tourBots = (await res.json()).bots || [];
+  } catch(e) { /* keep cache */ }
+  const wBot = tourBots.find(b => b.id === wP.id) || null;
+  const bBot = tourBots.find(b => b.id === bP.id) || null;
+
+  bvbGame = new Chess();
+  try { bvbGame.load(live.startFen || TOUR_START_FEN); } catch(e) { bvbGame = new Chess(); }
+  (live.moves || []).forEach(s => { try { bvbGame.move(s); } catch(e) {} });
+
+  clearArrows();
+  board.position(bvbGame.fen());
+  if (boardFlipped) { board.flip(); boardFlipped = false; }
+
+  bvbState = {
+    active: true, paused: false,
+    whiteBotId: wP.id, blackBotId: bP.id,
+    whiteMs: live.whiteMs || 0, blackMs: live.blackMs || 0,
+    timeControl: !!live.timeControl,
+    delay: Math.max(100, parseInt(live.delay) || 500),
+    clockInterval: null,
+    moveLog: [], _turnStartedAt: Date.now(), _pausedAccum: 0,
+    openingLocked: null,
+  };
+  if (ctxInfo.tour === 'T') window._tourBvbCtx = { roundIdx: ctxInfo.roundIdx, matchIdx: ctxInfo.matchIdx, w: wP, b: bP };
+  else window._duoBvbCtx = { matchIdx: ctxInfo.matchIdx, w: wP, b: bP };
+
+  _bvbUiShow(wP, bP, bvbState.timeControl);
+  hideAllDialogueBubbles();
+  bvbWhiteEngine.reset(wBot, bvbGame.fen(), { position: 'bottom', fixedColor: 'w', botLabel: wP.name });
+  bvbBlackEngine.reset(bBot, bvbGame.fen(), { position: 'top',    fixedColor: 'b', botLabel: bP.name });
+  setPlayStatus('Match resume ho gaya...');
+  bvbNextMove();
+}
+
+async function _resumeUserGame(live, ctxInfo) {
+  let g = null;
+  try { g = (await (await fetch(`${FLASK_URL}/play/game`)).json()).game || null; } catch(e) {}
+  // Saved game isi tournament match ka hona chahiye
+  if (g && (g.botId !== live.botId || g.status === 'over')) g = null;
+
+  const US = (ctxInfo.tour === 'T' ? (T && T.settings) : (DF && DF.settings)) || {};
+  const defFeats = {
+    undo: US.featUndo !== false, hint: US.featHint !== false, evalbar: !!US.featEvalbar,
+    threat: !!US.featThreat, suggestion: US.featSuggestion !== false,
+  };
+
+  playGame = new Chess();
+  try { playGame.load((g && g.startFen) || TOUR_START_FEN); } catch(e) { playGame = new Chess(); }
+  ((g && g.moves) || []).forEach(uci => {
+    try { playGame.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }); } catch(e) {}
+  });
+
+  playState = {
+    active: true,
+    botId: live.botId,
+    botName: (g && g.botName) || live.botName || 'Bot',
+    playerColor: live.playerColor,
+    timeControl: !!(g ? g.timeControl : US.userTimeOn),
+    timeMinutes: g ? (g.timeMinutes || 10) : (parseInt(US.userMinutes) || 10),
+    playerMs: g ? (g.playerMs || 0) : 0,
+    botMs:   g ? (g.botMs   || 0) : 0,
+    features: (g && g.features) || defFeats,
+    pgn: (g && g.pgn) || '',
+    fen: playGame.fen(),
+    startFen: (g && g.startFen) || TOUR_START_FEN,
+    status: 'playing', result: null,
+    moveLog: (g && g.moveLog) || [],
+    _turnStartedAt: Date.now(),
+    openingLocked: g ? (g.openingLocked !== undefined ? g.openingLocked : null) : null,
+  };
+  if (ctxInfo.tour === 'T') window.TOURNAMENT_CTX = { roundIdx: ctxInfo.roundIdx, matchIdx: ctxInfo.matchIdx };
+  else window.DUO_CTX = { matchIdx: ctxInfo.matchIdx };
+
+  _showBoardForPlay();
+  board.position(playGame.fen());
+  const needFlip = playState.playerColor === 'b';
+  if (needFlip !== boardFlipped) { board.flip(); boardFlipped = needFlip; }
+  setTimeout(attachBoardTapHandlers, 100);
+  showIngameUI();
+  updateCapturedDisplay();
+
+  hideAllDialogueBubbles();
+  try {
+    const res = await fetch(`${FLASK_URL}/play/bots`);
+    tourBots = (await res.json()).bots || [];
+  } catch(e) { /* keep cache */ }
+  const oppBot = tourBots.find(b => b.id === live.botId) || null;
+  personalityEngine.reset(oppBot, playGame.fen(), { position: 'top', botLabel: playState.botName });
+
+  if (playGame.turn() !== playState.playerColor) {
+    setPlayStatus('Opponent is thinking...');
+    setTimeout(() => triggerBotMove(), 400);
+  } else {
+    setPlayStatus('Match resume ho gaya \u2014 tumhari chaal!');
+  }
+}
+
+async function tourResumeLive() {
+  if (!T || !T.live) return;
+  const live = T.live;
+  if (live.kind === 'bvb') {
+    const m = T.rounds[live.roundIdx] && T.rounds[live.roundIdx][live.matchIdx];
+    if (!m) { delete T.live; renderTournaments(); return; }
+    const wP = live.wId === m.p1.id ? m.p1 : m.p2;
+    const bP = live.bId === m.p1.id ? m.p1 : m.p2;
+    await _resumeBvbGame(live, wP, bP, { tour: 'T', roundIdx: live.roundIdx, matchIdx: live.matchIdx });
+  } else {
+    await _resumeUserGame(live, { tour: 'T', roundIdx: live.roundIdx, matchIdx: live.matchIdx });
+  }
+}
+
+async function duoResumeLive() {
+  if (!DF || !DF.live) return;
+  const live = DF.live;
+  if (live.kind === 'bvb') {
+    const m = DF.matches[live.matchIdx];
+    if (!m) { delete DF.live; renderTournaments(); return; }
+    const wP = live.wId === DF.bot.id ? DF.bot : m.opponent;
+    const bP = live.bId === DF.bot.id ? DF.bot : m.opponent;
+    await _resumeBvbGame(live, wP, bP, { tour: 'DF', matchIdx: live.matchIdx });
+  } else {
+    await _resumeUserGame(live, { tour: 'DF', matchIdx: live.matchIdx });
+  }
+}
+
 // ── Watch / Skip / Abandon ────────────────────────────────────
 
 function tourWatch() {
@@ -954,6 +1133,7 @@ async function tourSkip() {
   if (!T || T.status !== 'active') return;
   if (!confirm('Remaining matches simulate karke result dekhna hai?')) return;
   _tourStopAuto();
+  if (T) delete T.live;
 
   let guard = 200;
   while (T.status === 'active' && guard-- > 0) {
@@ -987,7 +1167,7 @@ async function abandonTournament(confirmFirst) {
 //   against khelte hain (aapas mein nahi)
 // - Matches per player = N → total 2N matches, bot pehle, alternate
 // - Scoring: Win +5 / Draw +2 / Loss −3
-// - Tie → extra matches (no limit) jab tak clear winner na ho
+// - Tie → extra ROUND (dono khelenge), no limit, jab tak clear winner na ho
 // ============================================================
 
 const DUO_POINTS = { win: 5, draw: 2, loss: -3 };
@@ -1077,7 +1257,14 @@ function _renderDuoActive(root) {
   const escN = escHtmlHtml;
 
   let actionHtml;
-  if (!cur) {
+  if (DF.live) {
+    const liveTxt = DF.live.kind === 'bvb'
+      ? `\ud83e\udd16 <b>${escN(DF.bot.name)}</b> ka match board par adhoora hai`
+      : '\U0001f3af Tumhari match adhoori hai';
+    actionHtml = `
+      <div style="font-size:12px;color:var(--accent);font-weight:600">⏸ ${liveTxt} — wahi se resume karo!</div>
+      <button class="btn primary" onclick="duoResumeLive()">▶ Resume Match</button>`;
+  } else if (!cur) {
     actionHtml = `<div style="font-size:12px;color:var(--text2);text-align:center">⏳ Result calculate ho raha hai...</div>`;
   } else if (cur.match.who === 'bot') {
     actionHtml = `
@@ -1176,18 +1363,18 @@ async function _duoAfterResult() {
   // Saare matches complete — tie check
   const bs = _duoPts('bot'), us = _duoPts('user');
   if (bs === us) {
-    // 🔁 Extra match — turn order alternate hoti rahegi (even count → bot pehle)
-    const nextWho = DF.matches.length % 2 === 0 ? 'bot' : 'user';
-    const targetElo = nextWho === 'bot'
-      ? DF.bot.elo
-      : ((typeof playerProfile !== 'undefined' && playerProfile) ? playerProfile.elo || 1200 : 1200);
-    const opp = _duoPickOpponent(targetElo, nextWho === 'bot' ? DF.bot.id : null);
-    if (opp) {
-      DF.matches.push({ who: nextWho, result: null, opponent: opp });
+    // 🔁 Extra ROUND — SIRF ek player nahi, DONO khelenge.
+    // Dono ke extra matches complete hone ke baad hi score compare hoga.
+    const usrElo = ((typeof playerProfile !== 'undefined' && playerProfile) ? playerProfile.elo || 1200 : 1200);
+    const botOpp = _duoPickOpponent(DF.bot.elo, DF.bot.id);
+    const usrOpp = _duoPickOpponent(usrElo, null);
+    if (botOpp && usrOpp) {
+      DF.matches.push({ who: 'bot',  result: null, opponent: botOpp });
+      DF.matches.push({ who: 'user', result: null, opponent: usrOpp });
       await _duoSave();
       tourReturnToBracket();
       renderTournaments();
-      setPlayStatus('🔁 Score tied! Extra match add hua...');
+      setPlayStatus('🔁 Score tied! Extra round — dono khelenge!');
       return;
     }
     // Koi opponent nahi bacha — higher Elo ko winner man lo
@@ -1282,6 +1469,8 @@ async function duoWatchBotMatch() {
     openingLocked: null,
   };
   window._duoBvbCtx = { matchIdx: cur.idx, w: wP, b: bP };
+  DF.live = { kind: 'bvb', matchIdx: cur.idx, wId: wP.id, bId: bP.id, startFen: TOUR_START_FEN, moves: [], whiteMs: timeMs, blackMs: timeMs, timeControl: timeOn, delay: Math.max(100, parseInt(BS.bvbDelay) || 500) };
+  _duoSave();
 
   _showBoardForPlay();
   document.getElementById('bvb-ingame-controls').style.display = 'flex';
@@ -1313,6 +1502,7 @@ async function duoOnBvbGameOver() {
   const ctx = window._duoBvbCtx;
   if (!ctx) return;
   window._duoBvbCtx = null;
+  if (DF) delete DF.live;
 
   const m = DF.matches[ctx.matchIdx];
 
@@ -1383,6 +1573,9 @@ async function duoPlayUserMatch() {
     openingLocked: null,
   };
   window.DUO_CTX = { matchIdx: cur.idx };
+  DF.live = { kind: 'user', matchIdx: cur.idx, botId: opp.id, botName: opp.name, playerColor };
+  _duoSave();
+  autoSavePlayState();
 
   _showBoardForPlay();
   initPlayBoard();
@@ -1415,6 +1608,7 @@ async function duoOnUserGameOver(title) {
   const ctx = window.DUO_CTX;
   if (!ctx) return;
   window.DUO_CTX = null;
+  if (DF) delete DF.live;
 
   fetch(`${FLASK_URL}/play/game`, { method: 'DELETE' }).catch(() => {});
 
