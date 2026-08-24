@@ -88,6 +88,7 @@ def root_files(filename):
 # ── Core API routes ───────────────────────────────────────────────────────────
 
 APPEARANCE_FILE = os.path.join(DATA_DIR, "appearance.json")
+PLAY_SETTINGS_FILE = os.path.join(DATA_DIR, "play_settings.json")
 
 
 @app.route("/api/appearance", methods=["GET", "POST"])
@@ -106,6 +107,17 @@ def appearance():
         "sqDark":   body.get("sqDark",   "#7c5c3e"),
     }
     save_json_file(APPEARANCE_FILE, data)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/play-settings", methods=["GET", "POST"])
+def play_settings():
+    defaults = {}
+    if request.method == "GET":
+        data = load_json_file(PLAY_SETTINGS_FILE)
+        return jsonify(data if isinstance(data, dict) else defaults)
+    body = request.get_json(force=True) or {}
+    save_json_file(PLAY_SETTINGS_FILE, body)
     return jsonify({"ok": True})
 
 
