@@ -684,7 +684,6 @@ const fen = `${placement} ${setupTurn} ${castling} - 0 1`;
     if (!keepSaved) { window._arrowBest = null; window._arrowLast = null; }
     const svg = document.getElementById('arrow-svg');
     [...svg.children].forEach(el => { if (el.tagName !== 'defs') el.remove(); });
-    _clearLastMoveGlow();
   }
 
   function squareToCoords(sq, flipped) {
@@ -734,22 +733,6 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
     svg.appendChild(line);
 }
 
-  // Last-move glow helper — Lichess-style yellow square highlight
-  function _clearLastMoveGlow() {
-    document.querySelectorAll('.lastmove-glow').forEach(el => el.classList.remove('lastmove-glow'));
-  }
-  function _applyLastMoveGlow(fromSq, toSq) {
-    _clearLastMoveGlow();
-    const fromEl = document.querySelector('.square-' + fromSq);
-    const toEl = document.querySelector('.square-' + toSq);
-    if (fromEl) fromEl.classList.add('lastmove-glow');
-    if (toEl) toEl.classList.add('lastmove-glow');
-  }
-  function _isGlowOn() {
-    const el = document.getElementById('tog-lastmove-glow');
-    return el ? el.checked : false;
-  }
-
   function drawArrow(fromSq, toSq, type) {
     // type: 'best' | 'last'
     if (type === 'best') {
@@ -757,27 +740,14 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
       drawArrowSVG(fromSq, toSq, 'ah-best', 'rgba(97,189,79,0.93)');
     } else {
       window._arrowLast = { from: fromSq, to: toSq };
-      if (_isGlowOn()) {
-        // Lichess style — yellow glow on squares, no arrow
-        _applyLastMoveGlow(fromSq, toSq);
-      } else {
-        _clearLastMoveGlow();
-        drawArrowSVG(fromSq, toSq, 'ah-last', 'rgba(128,128,128,0.9)');
-      }
+      drawArrowSVG(fromSq, toSq, 'ah-last', 'rgba(128,128,128,0.9)');
     }
   }
 
   function redrawArrows() {
     const svg = document.getElementById('arrow-svg');
     [...svg.children].forEach(el => { if (el.tagName !== 'defs') el.remove(); });
-    _clearLastMoveGlow();
-    if (window._arrowLast) {
-      if (_isGlowOn()) {
-        _applyLastMoveGlow(window._arrowLast.from, window._arrowLast.to);
-      } else {
-        drawArrowSVG(window._arrowLast.from, window._arrowLast.to, 'ah-last', 'rgba(128,128,128,0.9)');
-      }
-    }
+    if (window._arrowLast) drawArrowSVG(window._arrowLast.from, window._arrowLast.to, 'ah-last', 'rgba(128,128,128,0.9)');
     if (window._arrowBest) drawArrowSVG(window._arrowBest.from, window._arrowBest.to, 'ah-best', 'rgba(97,189,79,0.93)');
   }
 

@@ -80,11 +80,6 @@
 .black-3c85d { background-color: var(--sq-dark,  #7c5c3e) !important; }
 .highlight-white { box-shadow: inset 0 0 0 4px rgba(196,163,90,0.8) !important; }
 .highlight-black { box-shadow: inset 0 0 0 4px rgba(196,163,90,0.8) !important; }
-/* Lichess-style last-move glow - subtle yellow highlight on source+dest squares */
-.lastmove-glow {
-  box-shadow: inset 0 0 12px 4px rgba(255,215,0,0.35) !important;
-  transition: box-shadow 0.15s;
-}
 
 /* All squares need position:relative for ::after to work */
 .square-55d63 { position: relative !important; }

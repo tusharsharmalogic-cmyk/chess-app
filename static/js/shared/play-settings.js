@@ -63,8 +63,6 @@
     if (typeof window._suggestionOn !== 'undefined') {
       s.suggestionOn = window._suggestionOn;
     }
-    // Last move glow toggle
-    s.lastmoveGlow = _getChecked('tog-lastmove-glow');
 
     return s;
   }
@@ -137,8 +135,6 @@
 
     // Bot vs Bot
     _setChecked('bvb-timecontrol', s.bvbTimecontrol);
-    // Last move glow toggle
-    _setChecked('tog-lastmove-glow', s.lastmoveGlow);
   }
 
   function _setChecked(id, val) {
@@ -187,7 +183,7 @@
     const checkIds = [
       'tog-timecontrol', 'tog-limitstrength',
       'feat-undo', 'feat-hint', 'feat-evalbar', 'feat-threat', 'feat-suggestion',
-      'bvb-timecontrol', 'tog-lastmove-glow'
+      'bvb-timecontrol'
     ];
     checkIds.forEach(id => {
       const el = document.getElementById(id);
@@ -208,15 +204,6 @@
     // Hash slider (various possible IDs)
     const hashEl = document.querySelector('input[type="range"][oninput*="updateHashDisplay"]');
     if (hashEl) hashEl.addEventListener('input', _debouncedSave);
-
-    // Last move glow toggle — live update board
-    const glowEl = document.getElementById('tog-lastmove-glow');
-    if (glowEl) {
-      glowEl.addEventListener('change', () => {
-        // Current arrows redraw karo naye mode ke hisaab se
-        if (typeof redrawArrows === 'function') redrawArrows();
-      });
-    }
 
     // Suggestion toggle (global button)
     document.addEventListener('click', (e) => {
