@@ -199,6 +199,8 @@
     // Tap/position/flip hooks naye board instance par dobara lagao
     wrapBoardTapHooks();
     setTimeout(attachBoardTapHandlers, 100);
+    // Arrows bhi redraw karo naye board par
+    setTimeout(() => redrawArrows(), 60);
   };
 
   function getPromotionPiece() {

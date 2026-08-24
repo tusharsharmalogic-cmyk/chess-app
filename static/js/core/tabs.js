@@ -20,6 +20,9 @@
       startFen:     startFen,
       moveHistory:  JSON.parse(JSON.stringify(moveHistory)),
       boardFlipped: boardFlipped,
+      // Arrows bhi save karo taaki wapas aane par sahi jagah redraw ho sakein
+      arrowBest:    window._arrowBest ? {...window._arrowBest} : null,
+      arrowLast:    window._arrowLast ? {...window._arrowLast} : null,
     };
   }
 
@@ -36,7 +39,12 @@
     startFen       = s.startFen;
     moveHistory    = s.moveHistory;
     boardFlipped   = s.boardFlipped;
+    // Arrows restore karo (board.position ke baad redraw karenge)
+    window._arrowBest = s.arrowBest || null;
+    window._arrowLast = s.arrowLast || null;
     board.position(s.fen, false);
+    // Board rebuild hone do, phir arrows redraw karo sahi coordinates par
+    setTimeout(() => redrawArrows(), 60);
   }
 
   // Track which tab is currently visible
