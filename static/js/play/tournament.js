@@ -196,9 +196,7 @@ async function _renderSetup(root) {
 
   root.innerHTML = `
     <div class="play-section">
-      <div class="play-section-header">🏆 Championship
-        <span style="float:right;font-size:10px;font-weight:400;color:var(--text3)">Knockout · Draw = Rematch</span>
-      </div>
+      <div class="play-section-header" style="border-bottom:1px solid var(--border,#333);padding-bottom:8px;letter-spacing:.4px">🏆 Championship <span style="float:right;font-size:10px;font-weight:400;color:var(--text3)">Knockout</span></div>
       <div class="play-section-body" style="gap:12px">
 
         <div>
@@ -208,20 +206,19 @@ async function _renderSetup(root) {
           <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3)">
             <span>4</span><span>8</span><span>16</span>
           </div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">You are always a participant · Max <b>${size - 1}</b> bots needed</div>
         </div>
 
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1)">
           <input type="checkbox" id="tour-custom-toggle" ${customOn ? 'checked' : ''} onchange="tourToggleCustom(this.checked)">
-          🎯 Particular bot selection (choose bots yourself)
+          🎯 Particular Bot Selection
         </label>
         <div id="tour-custom-box" style="display:${customOn ? 'block' : 'none'};max-height:150px;overflow-y:auto;border:1px solid var(--border,#333);border-radius:6px;padding:6px 10px">
-          ${botChecks || '<div style="font-size:11px;color:var(--text3)">Koi bot nahi — pehle Make Bot se banao!</div>'}
+          ${botChecks || '<div style="font-size:11px;color:var(--text3)">Koi bot available nahi</div>'}
         </div>
 
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1)">
           <input type="checkbox" id="tour-elorange-toggle" ${eloRangeOn ? 'checked' : ''} onchange="tourToggleEloRange(this.checked)">
-          📊 Custom Elo target (default: tumhari Elo ke aas-paas)
+          📊 Custom Elo Target
         </label>
         <div id="tour-elorange-box" style="display:${eloRangeOn ? 'flex' : 'none'};align-items:center;gap:8px;font-size:11px;color:var(--text2)">
           Target Elo:
@@ -257,17 +254,15 @@ async function _renderSetup(root) {
           <textarea class="play-input" id="tour-bvb-start-pgn" placeholder="Bot matches starting PGN (empty = normal start)" style="min-height:44px;resize:vertical;margin-top:8px;font-size:11px">${s.bvbStartPgn || ''}</textarea>
         </div>
 
-        <button class="btn primary" onclick="startTournament()">🚀 Generate Tournament</button>
+        <button class="btn primary" onclick="startTournament()" style="width:100%">🚀 Generate Tournament</button>
       </div>
     </div>
 
     <div class="play-section">
-      <div class="play-section-header">⚔ Duo Fight
-        <span style="float:right;font-size:10px;font-weight:400;color:var(--text3)">🤖 Bot vs 👤 You · Score Battle</span>
-      </div>
+      <div class="play-section-header" style="border-bottom:1px solid var(--border,#333);padding-bottom:8px;letter-spacing:.4px">⚔ Duo Fight <span style="float:right;font-size:10px;font-weight:400;color:var(--text3)">Score Battle</span></div>
       <div class="play-section-body" style="gap:10px">
         <div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">🤖 Bot chuno — koi bhi Elo chalega</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">🤖 Opponent Bot</div>
           <select id="duo-bot-select" class="play-input" style="width:100%">
             ${(duoOptions || '<option value="">— koi bot nahi —</option>')}
           </select>
@@ -276,12 +271,12 @@ async function _renderSetup(root) {
           <div style="font-size:11px;color:var(--text2);margin-bottom:4px">🎯 Matches per player — <b id="duo-mpp-label" style="color:var(--accent)">${mpp}</b></div>
           <input type="range" min="1" max="20" step="1" value="${mpp}" id="duo-mpp-slider"
             oninput="document.getElementById('duo-mpp-label').textContent=this.value" style="width:100%">
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">Total matches = <b>2 × per player</b> · 🤖 Bot pehle khelega</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Total: <b>${mpp * 2}</b> matches · 🤖 Bot pehle</div>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);background:var(--bg2,#222);border-radius:6px;padding:6px 10px;border:1px solid var(--border,#333)">
           <span>🏆 Win +5</span><span>🤝 Draw +2</span><span>❌ Loss −3</span>
         </div>
-        <button class="btn primary" onclick="startDuoFight()">⚔ Start Duo Fight</button>
+        <button class="btn primary" onclick="startDuoFight()" style="width:100%">⚔ Start Duo Fight</button>
       </div>
     </div>
 
@@ -1220,11 +1215,18 @@ async function _archiveDuo() {
     champion: DF.winner ? { name: DF.winner.name, type: DF.winner.type, elo: DF.winner.elo } : null,
     userWon: !!(DF.winner && DF.winner.type === 'user'),
     top5: [],
+    perPlayer: DF.perPlayer,
+    duoBot:   { name: DF.bot.name, elo: DF.bot.elo },
+    duoUser:  { name: DF.user.name, elo: DF.user.elo },
     matches: DF.matches.map((m, i) => ({
       round: i < 2 * DF.perPlayer ? `M${Math.floor(i / 2) + 1}` : `Extra ${i - 2 * DF.perPlayer + 1}`,
       p1: m.who === 'bot' ? DF.bot.name : DF.user.name,
       p2: m.opponent.name,
       winner: pName(m),
+      who: m.who,
+      participant: m.who === 'bot' ? DF.bot.name : DF.user.name,
+      opponentElo: m.opponent.elo || null,
+      result: m.result,
     })),
   };
   try {
@@ -1450,12 +1452,33 @@ async function abandonDuoFightSilent() {
   renderTournaments();
 }
 
-// ── Tournament History view ───────────────────────────────────
+// ── Tournament History view ───────────────────────────────
+
+let _histSelMode = false;
+
+function tourHistToggleSelect() {
+  _histSelMode = !_histSelMode;
+  renderTourHistoryView();
+}
+
+function _duoHistRes(m) {
+  if (m.result) return m.result;
+  if (m.winner == null) return 'draw';
+  return m.winner === m.p1 ? 'win' : 'loss';
+}
+
+function _duoHistScore(matches, who) {
+  return (matches || []).filter(m => m.who === who)
+    .reduce((s, m) => {
+      const r = _duoHistRes(m);
+      return s + (r === 'win' ? 5 : r === 'draw' ? 2 : r === 'loss' ? -3 : 0);
+    }, 0);
+}
 
 async function renderTourHistoryView() {
   const root = document.getElementById('tour-root');
   if (!root) return;
-  root.innerHTML = '<div class="play-section"><div class="play-section-body" style="text-align:center;padding:30px;color:var(--text3);font-size:12px">Loading…</div></div>';
+  root.innerHTML = '<div class="play-section"><div class="play-section-body" style="text-align:center;padding:30px;color:var(--text3);font-size:12px">Loading\u2026</div></div>';
 
   let hist = [];
   try {
@@ -1466,65 +1489,148 @@ async function renderTourHistoryView() {
 
   hist = [...hist].reverse(); // newest first
 
+  const dateStrOf = h => {
+    const d = new Date(h.finishedAt);
+    return isNaN(d) ? '' : d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  const checkHtml = h => _histSelMode
+    ? `<input type="checkbox" class="tour-hist-check" value="${h.id}" onclick="event.stopPropagation()"> `
+    : '';
+
   let listHtml;
   if (hist.length === 0) {
     listHtml = `<div class="play-section"><div class="play-section-body" style="text-align:center;padding:30px;color:var(--text3);font-size:12px">
-      Abhi tak koi tournament complete nahi hua 🏁
+      Abhi tak koi tournament complete nahi hua \ud83c\udfc1
     </div></div>`;
   } else {
     listHtml = hist.map(h => {
-      const d = new Date(h.finishedAt);
-      const dateStr = isNaN(d) ? '' : d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = dateStrOf(h);
+
+      // ⚔ Duo Fight \u2014 alag score-battle format
+      if (h.mode === 'duo') {
+        const champType = h.champion && h.champion.type;
+        let botName = (h.duoBot && h.duoBot.name) || 'Bot';
+        let usrName = (h.duoUser && h.duoUser.name) || 'You';
+        let norm = h.matches || [];
+        // Legacy entries (p1/p2/winner only) \u2014 fields infer karo
+        if (norm.length > 0 && norm[0].who == null) {
+          if (champType === 'user') {
+            usrName = (h.champion && h.champion.name) || usrName;
+            botName = norm.map(m => m.p1).find(n => n && n !== usrName) || botName;
+          } else if (champType) {
+            botName = (h.champion && h.champion.name) || botName;
+            usrName = norm.map(m => m.p1).find(n => n && n !== botName) || usrName;
+          }
+          norm = norm.map(m => ({
+            ...m,
+            who: m.p1 === usrName ? 'user' : 'bot',
+            opponent: m.p2,
+            opponentElo: null,
+            result: m.winner == null ? 'draw' : (m.winner === m.p1 ? 'win' : 'loss'),
+          }));
+        }
+        const bs = _duoHistScore(norm, 'bot');
+        const us = _duoHistScore(norm, 'user');
+        const botWon = champType && champType !== 'user';
+
+        const row = m => {
+          const r = _duoHistRes(m);
+          const icon = r === 'win' ? '\u2705' : r === 'draw' ? '\ud83e\udd1d' : r === 'loss' ? '\u274c' : '\u2753';
+          const pts  = r === 'win' ? '+5' : r === 'draw' ? '+2' : r === 'loss' ? '\u22123' : '';
+          const col  = r === 'win' ? 'var(--accent)' : r === 'loss' ? 'var(--danger)' : 'var(--text3)';
+          return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:10px;padding:3px 0;color:var(--text2)">
+            <span>${escHtmlHtml(m.round || '?')} vs ${escHtmlHtml(m.opponent || m.p2 || '?')}${m.opponentElo ? ` (~${m.opponentElo})` : ''}</span>
+            <span style="white-space:nowrap">${icon} <b style="color:${col}">${pts}</b></span>
+          </div>`;
+        };
+        const botRows = norm.filter(m => m.who === 'bot').map(row).join('');
+        const userRows = norm.filter(m => m.who === 'user').map(row).join('');
+
+        return `<details class="play-section" style="padding:0">
+          <summary style="padding:10px 14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px">
+              ${checkHtml(h)}\u2694 ${escHtmlHtml(h.champion ? h.champion.name : '?')} jeeta${h.userWon ? ' \u2014 Tum jeete! \ud83c\udf89' : ''}
+            </span>
+            <span style="font-size:10px;color:var(--text3);white-space:nowrap">\ud83e\udd16 <b>${bs}</b> : <b>${us}</b> \ud83d\udc64 \u00b7 ${dateStr} \u25be</span>
+          </summary>
+          <div style="padding:0 14px 12px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:center;gap:18px;background:var(--bg2,#222);border:1px solid var(--border,#333);border-radius:8px;padding:10px">
+              <div style="text-align:center;min-width:80px">
+                <div style="font-size:11px;color:var(--text2)">\ud83e\udd16 ${escHtmlHtml(botName)}</div>
+                <div style="font-size:22px;font-weight:800;color:${botWon || (!champType && bs >= us) ? 'var(--accent)' : 'var(--text3)'}">${bs}</div>
+              </div>
+              <div style="font-size:11px;color:var(--text3);font-weight:700">VS</div>
+              <div style="text-align:center;min-width:80px">
+                <div style="font-size:11px;color:var(--text2)">\ud83d\udc64 ${escHtmlHtml(usrName)}</div>
+                <div style="font-size:22px;font-weight:800;color=${champType === 'user' ? 'var(--accent)' : 'var(--text3)'}>${us}</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px">\ud83e\udd16 BOT MATCHES</div>
+              ${botRows || '<div style="font-size:10px;color:var(--text3)">\u2014</div>'}
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px">\ud83d\udc64 YOUR MATCHES</div>
+              ${userRows || '<div style="font-size:10px;color:var(--text3)">\u2014</div>'}
+            </div>
+          </div>
+        </details>`;
+      }
+
+      // \ud83c\udfc6 Classic Championship card
       const champName = h.champion ? h.champion.name : '?';
-      const champIcon = h.userWon ? '👑' : '🏆';
+      const champIcon = h.userWon ? '\ud83d\udc51' : '\ud83c\udfc6';
 
       const top5Rows = (h.top5 || []).map((p, i) => `
         <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 8px;border-radius:4px;${i === 0 ? 'background:var(--bg2,#222)' : ''}">
-          <span>${['🥇','🥈','🥉','4️⃣','5️⃣'][i] || ''} ${escHtmlHtml(p.name)}${p.type === 'user' ? ' <span style="color:var(--accent)">(You)</span>' : ''}</span>
-          <span style="color:var(--text3)">${p.wins} wins${p.elo ? ` · ~${p.elo}` : ''}</span>
+          <span>${['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49','4\ufe0f\u20e3','5\ufe0f\u20e3'][i] || ''} ${escHtmlHtml(p.name)}${p.type === 'user' ? ' <span style="color:var(--accent)">(You)</span>' : ''}</span>
+          <span style="color:var(--text3)">${p.wins} wins${p.elo ? ` \u00b7 ~${p.elo}` : ''}</span>
         </div>`).join('');
 
       const matchRows = (h.matches || []).map(m => `
         <div style="display:flex;justify-content:space-between;gap:6px;font-size:10px;padding:2px 0;color:var(--text2)">
           <span>${escHtmlHtml(m.round)}</span>
-          <span style="flex:1;text-align:right">${escHtmlHtml(m.p1)} vs ${escHtmlHtml(m.p2)} — <b style="color:var(--accent2)">${escHtmlHtml(m.winner || '?')}</b></span>
+          <span style="flex:1;text-align:right">${escHtmlHtml(m.p1)} vs ${escHtmlHtml(m.p2)} \u2014 <b style="color:var(--accent2)">${escHtmlHtml(m.winner || 'Draw')}</b></span>
         </div>`).join('');
 
       return `<details class="play-section" style="padding:0">
         <summary style="padding:10px 14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px">
-            <input type="checkbox" class="tour-hist-check" value="${h.id}" onclick="event.stopPropagation()">
-            ${champIcon} ${escHtmlHtml(champName)}${h.userWon ? ' — Tum jeete! 🎉' : ''}
+            ${checkHtml(h)}${champIcon} ${escHtmlHtml(champName)}${h.userWon ? ' \u2014 Tum jeete! \ud83c\udf89' : ''}
           </span>
-          <span style="font-size:10px;color:var(--text3)">${h.size}P · ${dateStr} ▾</span>
+          <span style="font-size:10px;color:var(--text3)">${h.size}P \u00b7 ${dateStr} \u25be</span>
         </summary>
         <div style="padding:0 14px 12px;display:flex;flex-direction:column;gap:10px">
           <div>
             <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px">TOP 5 PLAYERS</div>
-            ${top5Rows || '<div style="font-size:10px;color:var(--text3)">—</div>'}
+            ${top5Rows || '<div style="font-size:10px;color:var(--text3)">\u2014</div>'}
           </div>
           <div>
             <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px">MATCHES (${(h.matches || []).length})</div>
-            ${matchRows || '<div style="font-size:10px;color:var(--text3)">—</div>'}
+            ${matchRows || '<div style="font-size:10px;color:var(--text3)">\u2014</div>'}
           </div>
         </div>
       </details>`;
     }).join('');
   }
 
+  const selControls = _histSelMode ? `
+      <span id="tour-hist-sel-count" style="font-size:10px;color:var(--text3);align-self:center">0 selected</span>
+      <button class="btn danger sm" onclick="tourDeleteHistory()">\ud83d\udd11 Delete Selected</button>` : '';
+
   root.innerHTML = `
     <div class="play-section" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px">
-      <span style="font-size:13px;font-weight:700">📜 Tournament History</span>
-      <button class="btn sm" onclick="renderTournaments()">↩ Back</button>
+      <span style="font-size:13px;font-weight:700">\ud83d\udcdc Tournament History</span>
+      <button class="btn sm" onclick="renderTournaments()">\u21a9 Back</button>
     </div>
     <div class="btn-row" style="margin-top:10px;justify-content:flex-end">
-      <span id="tour-hist-sel-count" style="font-size:10px;color:var(--text3);align-self:center">0 selected</span>
-      <button class="btn danger sm" onclick="tourDeleteHistory()">🗑 Delete Selected</button>
+      <button class="btn sm ${_histSelMode ? 'primary' : ''}" onclick="tourHistToggleSelect()">${_histSelMode ? '\u2715 Cancel' : '\u2611 Select'}</button>
+      ${selControls}
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">${listHtml}</div>
   `;
 
-  // Selection count updater
+  // Selection count updater (sirf select mode mein checkboxes hote hain)
   root.querySelectorAll('.tour-hist-check').forEach(cb => {
     cb.addEventListener('change', () => {
       const n = root.querySelectorAll('.tour-hist-check:checked').length;
