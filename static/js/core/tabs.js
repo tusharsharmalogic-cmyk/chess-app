@@ -68,7 +68,11 @@
       try { bvbPauseResume(); } catch(e) {}
     }
     const _wantFlip = _flipMemory[name] ?? false;
-    if (_wantFlip !== boardFlipped) {
+    // Settings tab par flip ka KOI effect nahi — board jis orientation mein
+    // hai waisi hi rehti hai (Settings sirf starting position dikhata hai).
+    // Pehle yahan forced flip ho raha tha jisse wapas aane par arrows galat
+    // coordinates par redraw ho jaate the.
+    if (name !== 'settings' && _wantFlip !== boardFlipped) {
       board.flip();
       boardFlipped = _wantFlip;
       setTimeout(attachBoardTapHandlers, 80);
