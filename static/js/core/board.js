@@ -267,6 +267,7 @@
       const move = game.move({ from: selectedSquare, to: square, promotion: promotionPiece });
       if (move !== null) {
         // Valid move!
+        if (window.SoundFX) SoundFX.playForMove(game, move);
         clearTapSelection();
         clearHighlights();
         board.position(game.fen());

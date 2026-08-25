@@ -248,6 +248,7 @@ async function bvbNextMove() {
 
     const moveObj = bvbGame.move({ from, to, promotion: promo });
     if (!moveObj) throw new Error('Illegal move: ' + uci);
+    if (window.SoundFX) SoundFX.playForMove(bvbGame, moveObj);
 
     // Per-move time tracking
     const remainingMs = turn === 'w' ? bvbState.whiteMs : bvbState.blackMs;

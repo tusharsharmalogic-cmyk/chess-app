@@ -838,6 +838,11 @@
     updateTurnLabel();
     updatePGNMovesHighlight(idx);
     clearArrows();
+    // Sound for the move we navigated to (capture/check/gameend aware)
+    if (window.SoundFX) {
+      const navMove = allHistory[idx];
+      if (navMove) SoundFX.playForMove(game, navMove);
+    }
     // Show last played move as blue arrow
     const lastMove = allHistory[idx];
     if (lastMove) setTimeout(() => drawArrow(lastMove.from, lastMove.to, 'last'), 90);

@@ -65,6 +65,7 @@ function handleSquareTap(square) {
     const move = playGame.move({ from: playSelectedSquare, to: square, promotion: promo });
     if (move !== null) {
       clearPlayTapSelection();
+      if (window.SoundFX) SoundFX.playForMove(playGame, move);
       recordPlayMoveTime(move, playState.playerColor);
       board.position(playGame.fen());
       playState.fen = playGame.fen();
@@ -203,6 +204,7 @@ async function triggerBotMove() {
 
     const moveObj = playGame.move({ from, to, promotion: promo });
     if (!moveObj) throw new Error('Illegal bot move: ' + moveUci);
+    if (window.SoundFX) SoundFX.playForMove(playGame, moveObj);
     recordPlayMoveTime(moveObj, playState.playerColor === 'w' ? 'b' : 'w');
 
     personalityEngine.onAfterMove(playGame, moveObj, finalData.score !== undefined ? finalData.score : null, phase);
