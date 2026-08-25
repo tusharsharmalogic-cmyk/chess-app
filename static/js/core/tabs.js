@@ -32,6 +32,12 @@
       return;
     }
     const s = _analysisBoardSnapshot;
+    // Physical board ki ACTUAL orientation yaad rakho. Upar wala per-tab
+    // flip-memory block shayad board.flip() kar chuka hoga, lekin snapshot
+    // ke arrows uss orientation ke liye save hain jis mein snapshot bana tha.
+    // Variable + physical board match karna zaroori hai warna arrows mirror
+    // ho jaati hain (white ka arrow black par draw hota tha).
+    const physFlipped = boardFlipped;
     game.load(s.fen);
     currentMoveIdx = s.moveIdx;
     varTree        = s.varTree;
@@ -42,6 +48,11 @@
     // Arrows restore karo (board.position ke baad redraw karenge)
     window._arrowBest = s.arrowBest || null;
     window._arrowLast = s.arrowLast || null;
+    // Physical board ko snapshot ki orientation par wapas lao agar mismatch hai
+    if (boardFlipped !== physFlipped) {
+      board.flip();
+      setTimeout(attachBoardTapHandlers, 80);
+    }
     board.position(s.fen, false);
     // Board rebuild hone do, phir arrows redraw karo sahi coordinates par
     setTimeout(() => redrawArrows(), 60);
