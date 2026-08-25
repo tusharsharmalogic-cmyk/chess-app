@@ -321,19 +321,22 @@ function frHandleSquareTap(square) {
 
     frUpdateCapturedDisplay();
 
-    // Auto-flip board: current turn's color at bottom
+    // Auto-flip board (if enabled): current turn's color at bottom
     const nextTurn = frGame.turn();
-    const needFlip = nextTurn === 'b'; // black at bottom when black's turn
-    if (needFlip !== boardFlipped) {
-      board.flip();
-      boardFlipped = needFlip;
-      // Redraw last-move arrow after flip
-      clearArrows();
-      setTimeout(() => {
-        drawPlayArrow(move.from, move.to, 'last');
-        frUpdateLabelsAndClocks();
-        frUpdateCapturedDisplay();
-      }, 80);
+    const autoFlip = document.getElementById('fr-autoflip')?.checked !== false;
+    if (autoFlip) {
+      const needFlip = nextTurn === 'b'; // black at bottom when black's turn
+      if (needFlip !== boardFlipped) {
+        board.flip();
+        boardFlipped = needFlip;
+        // Redraw last-move arrow after flip
+        clearArrows();
+        setTimeout(() => {
+          drawPlayArrow(move.from, move.to, 'last');
+          frUpdateLabelsAndClocks();
+          frUpdateCapturedDisplay();
+        }, 80);
+      }
     }
 
     frUpdateLabelsAndClocks();
@@ -454,24 +457,32 @@ async function frSaveToHistory(title, reason) {
 }
 
 function _frResultFromGameOver(title) {
-  if (/wins!/i.test(title)) {
-    const match = title.match(/wins!/);
-    // Figure out who won from the title
+  if (/Resign/i.test(title)) {
+    // Resignation — the other player wins
     if (frGame.in_checkmate()) {
       const loserColor = frGame.turn();
       const winnerColor = loserColor === 'w' ? 'b' : 'w';
       return { result: winnerColor === 'w' ? '1-0' : '0-1', winner: winnerColor === 'w' ? 'white' : 'black' };
     }
+    // frGame.turn() is the loser side after resignation
+    const loserColor = frGame.turn();
+    const winnerColor = loserColor === 'w' ? 'b' : 'w';
+    return { result: winnerColor === 'w' ? '1-0' : '0-1', winner: winnerColor === 'w' ? 'white' : 'black' };
+  }
+  if (/ran out of time/i.test(title)) {
+    // Time loss — the other player wins
+    // frGame.turn() is the side that ran out of time
+    const loserColor = frGame.turn();
+    const winnerColor = loserColor === 'w' ? 'b' : 'w';
+    return { result: winnerColor === 'w' ? '1-0' : '0-1', winner: winnerColor === 'w' ? 'white' : 'black' };
   }
   if (/Draw|½/i.test(title)) {
     return { result: '1/2-1/2', winner: 'draw' };
   }
-  // Time loss: figure out who ran out
-  if (/White ran out/i.test(title)) {
-    return { result: '0-1', winner: 'black' };
-  }
-  if (/Black ran out/i.test(title)) {
-    return { result: '1-0', winner: 'white' };
+  if (/wins!/i.test(title) && frGame.in_checkmate()) {
+    const loserColor = frGame.turn();
+    const winnerColor = loserColor === 'w' ? 'b' : 'w';
+    return { result: winnerColor === 'w' ? '1-0' : '0-1', winner: winnerColor === 'w' ? 'white' : 'black' };
   }
   return { result: '*', winner: null };
 }

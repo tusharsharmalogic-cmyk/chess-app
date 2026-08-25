@@ -253,8 +253,8 @@
         <div class="play-subbtn" id="sb-tournaments" onclick="playSubSwitch('tournaments')">🏆 Tournament's</div>
         <div class="play-subbtn" id="sb-puzzles" onclick="playSubSwitch('puzzles')">🧩 Puzzle</div>
         <div class="play-subbtn" id="sb-lichess" onclick="playSubSwitch('lichess')">🌐 Lichess</div>
-        <div class="play-subbtn" id="sb-history" onclick="playSubSwitch('history')">📜 History</div>
         <div class="play-subbtn" id="sb-friend" onclick="playSubSwitch('friend')">👥 Play Friend</div>
+        <div class="play-subbtn" id="sb-history" onclick="playSubSwitch('history')">📜 History</div>
       </div>
 
       <!-- ── PAGE: Make a Bot ───────────────────────── -->
@@ -817,6 +817,16 @@
             <div class="color-pills">
               <div class="color-pill selected" id="fr-pill-white" onclick="frSelectColor('white')">♙ White</div>
               <div class="color-pill" id="fr-pill-black" onclick="frSelectColor('black')">♟ Black</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">🔀 Auto Flip Board</div>
+          <div class="play-section-body">
+            <div class="play-toggle-row">
+              <span class="play-toggle-label">Board auto-flips on each move</span>
+              <label class="toggle-switch"><input type="checkbox" id="fr-autoflip" checked><span class="toggle-slider"></span></label>
             </div>
           </div>
         </div>
