@@ -14,6 +14,8 @@ New in v7:
 """
 
 import os
+import threading
+import webbrowser
 import chess
 import chess.engine
 from flask import Flask, request, jsonify, send_from_directory
@@ -206,10 +208,30 @@ def validate_fen():
         return jsonify({"valid": False, "error": str(e)})
 
 
+# ── Auto-open browser on startup ───────────────────────────────────────────
+
+def _open_browser():
+    """Open the chess-app in Chrome (or default browser) after server is up."""
+    url = "http://localhost:5050"
+    # Prefer Chrome; fall back to system default browser
+    for name in ("chrome", "google-chrome", "chromium"):
+        try:
+            browser = webbrowser.get(name)
+            if browser.open(url):
+                return
+        except webbrowser.Error:
+            continue
+    webbrowser.open(url)
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     print("Chess Analyzer backend -- v7 (Lucas Chess Phase Detection)")
     print("Termux -> pkg install stockfish")
     print("Open  -> http://localhost:5050")
+    # Auto-open Chrome ~1.5s later so the server has time to bind first.
+    # Guard skips this in the Flask reloader child process when debug=True.
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        threading.Timer(1.5, _open_browser).start()
     app.run(host="0.0.0.0", port=5050, debug=False)
