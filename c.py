@@ -14,6 +14,8 @@ New in v7:
 """
 
 import os
+import shutil
+import subprocess
 import threading
 import webbrowser
 import chess
@@ -211,9 +213,29 @@ def validate_fen():
 # ── Auto-open browser on startup ───────────────────────────────────────────
 
 def _open_browser():
-    """Open the chess-app in Chrome (or default browser) after server is up."""
-    url = "http://localhost:5050"
-    # Prefer Chrome; fall back to system default browser
+    """Open the chess-app in the browser after server is up.
+
+    Order of attempts:
+      1. Android/Termux  -> `am start` intent (Python's webbrowser does not
+                            work inside Termux, but this always opens Chrome)
+      2. Desktop         -> Chrome via webbrowser registry
+      3. Fallback        -> system default browser
+    """
+    url = "http://127.0.0.1:5050"
+
+    # 1) Android / Termux — am start is the reliable way to open Chrome
+    if shutil.which("am"):
+        try:
+            subprocess.Popen(
+                ["am", "start", "-a", "android.intent.action.VIEW", "-d", url],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return
+        except Exception:
+            pass
+
+    # 2) Desktop — try Chrome explicitly
     for name in ("chrome", "google-chrome", "chromium"):
         try:
             browser = webbrowser.get(name)
@@ -221,6 +243,8 @@ def _open_browser():
                 return
         except webbrowser.Error:
             continue
+
+    # 3) Last resort — system default browser
     webbrowser.open(url)
 
 
