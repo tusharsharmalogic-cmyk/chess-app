@@ -177,12 +177,24 @@
       }
     } else if (name === 'settings') {
       // Settings tab — play/review UI states clean karo, analysis board ko touch mat karo
-      document.body.classList.remove('review-readonly');
-      document.body.classList.remove('play-board-hidden');
       document.body.classList.remove('review-board-hidden');
+      document.body.classList.remove('play-board-hidden');
       document.getElementById('clock-top-row').classList.remove('show');
       document.getElementById('clock-bottom-row').classList.remove('show');
       document.getElementById('copy-pgn-btn').classList.remove('show', 'pulse');
+      // Settings apni alag jagah hai — hamesha STARTING POSITION dikhao,
+      // bilkul read-only (koi tap/drag nahi). Analysis/PGN/FEN ki position,
+      // arrows ya highlights se koi matlab nahi — unka snapshot upar save
+      // ho chuka hai, wapas jaate waqt _restoreAnalysisSnapshot() wapas
+      // laa dega.
+      document.body.classList.add('review-readonly');
+      document.getElementById('analysis-top-row').classList.remove('show');
+      document.getElementById('analysis-bottom-row').classList.remove('show');
+      window._arrowLast = null;
+      window._arrowBest = null;
+      window._suggestionArrow = null;
+      clearTapSelection();
+      board.position('start');
       // Pehli baar khulne par init (dropdown + pickers wire)
       if (!_settingsTabInited && typeof initSettingsTab === 'function') {
         _settingsTabInited = true;
