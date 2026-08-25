@@ -351,19 +351,51 @@
       saveAppearance(chosen, lightPicker.value, darkPicker.value);
     });
 
-    // 5. Board color pickers
+    // 5. Board color pickers (+ hex paste support)
     const lightPicker = document.getElementById('sq-light-picker');
     const darkPicker  = document.getElementById('sq-dark-picker');
+    const lightHex    = document.getElementById('sq-light-hex');
+    const darkHex     = document.getElementById('sq-dark-hex');
     lightPicker.value = localStorage.getItem('sqLight') || '#f0e9d2';
     darkPicker.value  = localStorage.getItem('sqDark')  || '#7c5c3e';
+    lightHex.value = lightPicker.value;
+    darkHex.value  = darkPicker.value;
+
+    // "#b8905f", "b8905f", full uppercase — sab accept karo
+    const _parseHex = v => {
+      v = (v || '').trim();
+      if (!v) return null;
+      if (!v.startsWith('#')) v = '#' + v;
+      return /^[0-9a-fA-F]{6}$/.test(v.slice(1)) ? v.toLowerCase() : null;
+    };
+    const _setLight = hex => {
+      document.documentElement.style.setProperty('--sq-light', hex);
+      saveAppearance(sel.value, hex, darkPicker.value);
+    };
+    const _setDark = hex => {
+      document.documentElement.style.setProperty('--sq-dark', hex);
+      saveAppearance(sel.value, lightPicker.value, hex);
+    };
 
     lightPicker.addEventListener('input', e => {
-      document.documentElement.style.setProperty('--sq-light', e.target.value);
-      saveAppearance(sel.value, e.target.value, darkPicker.value);
+      lightHex.value = e.target.value;
+      _setLight(e.target.value);
     });
     darkPicker.addEventListener('input', e => {
-      document.documentElement.style.setProperty('--sq-dark', e.target.value);
-      saveAppearance(sel.value, lightPicker.value, e.target.value);
+      darkHex.value = e.target.value;
+      _setDark(e.target.value);
+    });
+
+    // Hex text field — paste/type karke color code apply
+    lightHex.addEventListener('change', () => {
+      const hex = _parseHex(lightHex.value);
+      if (hex) { lightPicker.value = hex; _setLight(hex); }
+      else lightHex.value = lightPicker.value;
+    });
+    darkHex.addEventListener('change', () => {
+      const hex = _parseHex(darkHex.value);
+      if (hex) { darkPicker.value = hex; _setDark(hex); }
+      else darkHex.value = darkPicker.value;
     });
 
     // 6. Reset button — default colors
@@ -371,6 +403,8 @@
       const dl = '#f0e9d2', dd = '#7c5c3e';
       lightPicker.value = dl;
       darkPicker.value  = dd;
+      lightHex.value = dl;
+      darkHex.value  = dd;
       document.documentElement.style.setProperty('--sq-light', dl);
       document.documentElement.style.setProperty('--sq-dark',  dd);
       saveAppearance(sel.value, dl, dd);

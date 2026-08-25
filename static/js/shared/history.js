@@ -397,11 +397,6 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       return item;
     }
 
-    // ── Play with Friend group ──
-    if (friendGames.length > 0) {
-      body.appendChild(_makeGroup('\uD83D\uDC65', 'Play with Friend', friendGames, playbotGames.length === 0 && bvbGames.length === 0));
-    }
-
     // ── Player vs Bot group ──
     if (playbotGames.length > 0) {
       body.appendChild(_makeGroup('\u265F', 'Player vs Bot', playbotGames, friendGames.length === 0));
@@ -410,6 +405,11 @@ const depth = parseInt(document.getElementById('depth-slider').value);
     // ── Bot vs Bot group ──
     if (bvbGames.length > 0) {
       body.appendChild(_makeGroup('\u2694\uFE0F', 'Bot vs Bot', bvbGames, playbotGames.length === 0 && friendGames.length === 0));
+    }
+
+    // ── Play with Friend group (sabse niche) ──
+    if (friendGames.length > 0) {
+      body.appendChild(_makeGroup('\uD83D\uDC65', 'Play with Friend', friendGames, playbotGames.length === 0 && bvbGames.length === 0));
     }
   }
 
