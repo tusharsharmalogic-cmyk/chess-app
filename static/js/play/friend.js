@@ -426,7 +426,7 @@ function frGameOver(title, reason) {
 // ── Save game to history ──────────────────────────────────────
 
 async function frSaveToHistory(title, reason) {
-  const { result, winner } = _frResultFromGameOver(title);
+  const { result, winner } = _frResultFromGameOver(title, reason);
 
   const payload = {
     mode:           'friend',
@@ -456,35 +456,23 @@ async function frSaveToHistory(title, reason) {
   } catch(e) { /* ignore */ }
 }
 
-function _frResultFromGameOver(title) {
-  if (/Resign/i.test(title)) {
-    // Resignation — the other player wins
-    if (frGame.in_checkmate()) {
-      const loserColor = frGame.turn();
-      const winnerColor = loserColor === 'w' ? 'b' : 'w';
-      return { result: winnerColor === 'w' ? '1-0' : '0-1', winner: winnerColor === 'w' ? 'white' : 'black' };
-    }
-    // frGame.turn() is the loser side after resignation
-    const loserColor = frGame.turn();
-    const winnerColor = loserColor === 'w' ? 'b' : 'w';
-    return { result: winnerColor === 'w' ? '1-0' : '0-1', winner: winnerColor === 'w' ? 'white' : 'black' };
-  }
-  if (/ran out of time/i.test(title)) {
-    // Time loss — the other player wins
-    // frGame.turn() is the side that ran out of time
-    const loserColor = frGame.turn();
-    const winnerColor = loserColor === 'w' ? 'b' : 'w';
-    return { result: winnerColor === 'w' ? '1-0' : '0-1', winner: winnerColor === 'w' ? 'white' : 'black' };
-  }
-  if (/Draw|½/i.test(title)) {
+function _frResultFromGameOver(title, reason) {
+  // Combined text — title sirf player naam + "wins!" rakhta hai,
+  // asli wajah (ran out of time / Resignation / Stalemate) reason mein hoti hai
+  const txt = ((title || '') + ' ' + (reason || '')).toLowerCase();
+
+  if (/draw|½|stalemate|repetition|insufficient/.test(txt)) {
     return { result: '1/2-1/2', winner: 'draw' };
   }
-  if (/wins!/i.test(title) && frGame.in_checkmate()) {
-    const loserColor = frGame.turn();
-    const winnerColor = loserColor === 'w' ? 'b' : 'w';
-    return { result: winnerColor === 'w' ? '1-0' : '0-1', winner: winnerColor === 'w' ? 'white' : 'black' };
-  }
-  return { result: '*', winner: null };
+
+  // Decisive result (checkmate / time-out / resignation):
+  // har case mein frGame.turn() = losing side
+  const loserColor = frGame.turn();
+  const winnerColor = loserColor === 'w' ? 'b' : 'w';
+  return {
+    result: winnerColor === 'w' ? '1-0' : '0-1',
+    winner: winnerColor === 'w' ? 'white' : 'black',
+  };
 }
 
 function _frInjectClkComments(pgn, moveLog) {
