@@ -231,6 +231,42 @@ const depth = parseInt(document.getElementById('depth-slider').value);
     return `${day}/${month}/${year} ${hour}:${min} ${ampm}`;
   }
 
+  // Determine win/loss/draw coloring for a history game.
+  // Matches the signed-in player's saved names (profile name + "Other Names"
+  // i.e. Lichess/Chess.com usernames) against white_name/black_name —
+  // same approach as imported games in pgn.js.
+  // Returns 'win' (green) / 'loss' (red) / 'draw' (neutral gold).
+  function _historyResultClass(g) {
+    if (!g || g.winner === 'draw') return 'draw';
+    if (!g.winner) return 'draw';
+
+    // Play vs Bot knows the player's side directly from player_color
+    if (g.mode === 'playbot' && g.player_color) {
+      const playerColor = g.player_color === 'w' ? 'white' : 'black';
+      return g.winner === playerColor ? 'win' : 'loss';
+    }
+
+    // Name matching: profile name + all Other Names
+    const _myNames = new Set();
+    if (playerProfile && playerProfile.name && playerProfile.name.trim())
+      _myNames.add(playerProfile.name.trim().toLowerCase());
+    ((playerProfile && playerProfile.other_names) || []).forEach(n => {
+      if (n && n.trim()) _myNames.add(n.trim().toLowerCase());
+    });
+    const wName = (g.white_name || '').trim().toLowerCase();
+    const bName = (g.black_name || '').trim().toLowerCase();
+    const iAmWhite = !!wName && _myNames.has(wName);
+    const iAmBlack = !!bName && _myNames.has(bName);
+
+    if (iAmWhite || iAmBlack) {
+      const iWon = (iAmWhite && g.winner === 'white') || (iAmBlack && g.winner === 'black');
+      return iWon ? 'win' : 'loss';
+    }
+
+    // No identity match — neutral styling instead of fake green
+    return 'draw';
+  }
+
   async function renderHistoryList() {
     const body = document.getElementById('history-list-body');
     body.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">Loading...</div>';
@@ -333,19 +369,12 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       left.appendChild(subEl);
 
       const resultEl = document.createElement('div');
-      let cls = 'draw', label = g.result || '*';
+      let label = g.result || '*';
       if (g.winner === 'white') { label = '1-0'; }
       else if (g.winner === 'black') { label = '0-1'; }
       else if (g.winner === 'draw') { label = '½-½'; }
 
-      if (g.mode === 'playbot') {
-        const playerColor = g.player_color === 'w' ? 'white' : 'black';
-        if (g.winner === 'draw') cls = 'draw';
-        else if (g.winner === playerColor) cls = 'win';
-        else cls = 'loss';
-      } else {
-        cls = g.winner === 'draw' ? 'draw' : 'win';
-      }
+      const cls = _historyResultClass(g);
 
       resultEl.className = 'history-item-result ' + cls;
       resultEl.textContent = label;
@@ -396,9 +425,14 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       `${g.white_name || 'White'} vs ${g.black_name || 'Black'}`;
 
     let resultLabel = g.result || '*';
+    let resultCls = 'var(--text3)';
     if (g.winner === 'white') resultLabel = '1 – 0  (White wins)';
     else if (g.winner === 'black') resultLabel = '0 – 1  (Black wins)';
     else if (g.winner === 'draw') resultLabel = '½ – ½  (Draw)';
+    if (g.winner) {
+      const cls = _historyResultClass(g);
+      resultCls = cls === 'win' ? 'var(--accent2)' : cls === 'loss' ? 'var(--danger)' : 'var(--accent)';
+    }
 
     const tc = g.time_control ? `${g.time_control.minutes} min/side` : 'No time control';
     const wLeft = g.white_time_left_ms !== undefined && g.white_time_left_ms !== null ? formatHistTime(g.white_time_left_ms) : '—';
@@ -407,7 +441,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
     const meta = document.getElementById('history-detail-meta');
     meta.innerHTML = `
       <div><b>Mode:</b> ${modeLabel}</div>
-      <div><b>Result:</b> ${resultLabel}</div>
+      <div><b>Result:</b> <span style="color:${resultCls};font-weight:700">${resultLabel}</span></div>
       <div><b>Reason:</b> ${g.reason || '—'}</div>
       <div><b>Played:</b> ${formatHistDate(g.ended_at)}</div>
       <div><b>Time control:</b> ${tc}</div>

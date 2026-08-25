@@ -53,6 +53,19 @@ function startFriendMatch() {
   const timeMs   = timeOn ? Math.max(1, Math.min(180, timeMins)) * 60000 : 0;
 
   frGame = new Chess();
+
+  // Optional starting PGN (same behavior as Play vs Bot / Bot vs Bot)
+  let startFen = 'start';
+  const startPgnRaw = document.getElementById('fr-start-pgn').value.trim();
+  if (startPgnRaw) {
+    if (!frGame.load_pgn(startPgnRaw)) {
+      alert('Invalid starting PGN! Ignoring it, starting from normal position.');
+      frGame = new Chess();
+    } else {
+      startFen = frGame.fen();
+    }
+  }
+
   frState = {
     active:       true,
     player1Name:  p1Name,
@@ -78,7 +91,7 @@ function startFriendMatch() {
     setTimeout(attachBoardTapHandlers, 100);
   }
 
-  board.position('start');
+  board.position(startFen);
   clearArrows();
   frUpdateLabelsAndClocks();
   frUpdateCapturedDisplay();
