@@ -36,6 +36,12 @@ function handleSquareTap(square) {
     return;
   }
 
+  // Play with Friend mode — local 2-player
+  if (typeof frState !== 'undefined' && frState && frState.active) {
+    frHandleSquareTap(square);
+    return;
+  }
+
   if (!playState.active || playState.status !== 'playing') return;
   if (playGame.turn() !== playState.playerColor) return;
   if (playBotThinking) return;
@@ -298,6 +304,11 @@ function endGame(title, reason) {
 }
 
 async function resignGame() {
+  // Play with Friend mode
+  if (typeof frState !== 'undefined' && frState && frState.active) {
+    frResign();
+    return;
+  }
   if (!playState.active) return;
   if (!confirm('Resign karna chahte ho?')) return;
   endGame('🏳 Resigned', 'You resigned the game');

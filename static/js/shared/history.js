@@ -254,8 +254,9 @@ const depth = parseInt(document.getElementById('depth-slider').value);
 
     body.innerHTML = '';
 
-    const playbotGames = _historyGames.filter(g => g.mode !== 'botvsbot');
+    const playbotGames = _historyGames.filter(g => g.mode === 'playbot');
     const bvbGames     = _historyGames.filter(g => g.mode === 'botvsbot');
+    const friendGames  = _historyGames.filter(g => g.mode === 'friend');
 
     function _makeGroup(icon, label, games, defaultOpen) {
       const grp = document.createElement('div');
@@ -318,7 +319,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       const left = document.createElement('div');
       left.className = 'history-item-left';
 
-      const modeLabel = g.mode === 'botvsbot' ? '⚔ Bot vs Bot' : '♟ vs Bot';
+      const modeLabel = g.mode === 'botvsbot' ? '⚔ Bot vs Bot' : (g.mode === 'friend' ? '👥 Play Friend' : '♟ vs Bot');
       const titleEl = document.createElement('div');
       titleEl.className = 'history-item-title';
       titleEl.textContent = `${g.white_name || 'White'} vs ${g.black_name || 'Black'}`;
@@ -367,14 +368,19 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       return item;
     }
 
+    // ── Play with Friend group ──
+    if (friendGames.length > 0) {
+      body.appendChild(_makeGroup('\uD83D\uDC65', 'Play with Friend', friendGames, playbotGames.length === 0 && bvbGames.length === 0));
+    }
+
     // ── Player vs Bot group ──
     if (playbotGames.length > 0) {
-      body.appendChild(_makeGroup('\u265F', 'Player vs Bot', playbotGames, true));
+      body.appendChild(_makeGroup('\u265F', 'Player vs Bot', playbotGames, friendGames.length === 0));
     }
 
     // ── Bot vs Bot group ──
     if (bvbGames.length > 0) {
-      body.appendChild(_makeGroup('\u2694\uFE0F', 'Bot vs Bot', bvbGames, playbotGames.length === 0));
+      body.appendChild(_makeGroup('\u2694\uFE0F', 'Bot vs Bot', bvbGames, playbotGames.length === 0 && friendGames.length === 0));
     }
   }
 
@@ -385,7 +391,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
 
     document.getElementById('history-detail').style.display = 'flex';
 
-    const modeLabel = g.mode === 'botvsbot' ? '⚔ Bot vs Bot' : '♟ Play vs Bot';
+    const modeLabel = g.mode === 'botvsbot' ? '⚔ Bot vs Bot' : (g.mode === 'friend' ? '👥 Play Friend' : '♟ Play vs Bot');
     document.getElementById('history-detail-title').textContent =
       `${g.white_name || 'White'} vs ${g.black_name || 'Black'}`;
 
@@ -845,7 +851,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       `[Black "${g.black_name || 'Black'}"]`,
       `[Result "${result}"]`,
     ];
-    if (g.mode) headers.push(`[GameMode "${g.mode === 'botvsbot' ? 'Bot vs Bot' : 'Play vs Bot'}"]`);
+    if (g.mode) headers.push(`[GameMode "${g.mode === 'botvsbot' ? 'Bot vs Bot' : (g.mode === 'friend' ? 'Play Friend' : 'Play vs Bot')}"]`);
     if (tcStr !== '-') headers.push(`[TimeControl "${tcStr}"]`);
     if (timeStr !== '??:??:??') headers.push(`[UTCTime "${timeStr}"]`);
     if (termination) headers.push(`[Termination "${termination}"]`);

@@ -254,6 +254,7 @@
         <div class="play-subbtn" id="sb-puzzles" onclick="playSubSwitch('puzzles')">🧩 Puzzle</div>
         <div class="play-subbtn" id="sb-lichess" onclick="playSubSwitch('lichess')">🌐 Lichess</div>
         <div class="play-subbtn" id="sb-history" onclick="playSubSwitch('history')">📜 History</div>
+        <div class="play-subbtn" id="sb-friend" onclick="playSubSwitch('friend')">👥 Play Friend</div>
       </div>
 
       <!-- ── PAGE: Make a Bot ───────────────────────── -->
@@ -797,6 +798,47 @@
 
       </div><!-- end botvsbot page -->
 
+      <!-- ── PAGE: Play with Friend ──────────────── -->
+      <div class="play-page" id="play-page-friend">
+
+        <div class="play-section">
+          <div class="play-section-header">👤 Player 2 Name</div>
+          <div class="play-section-body">
+            <div class="play-field">
+              <div class="play-label">Opponent Name</div>
+              <input type="text" class="play-input" id="fr-p2-name" placeholder="e.g. Rahul" value="">
+            </div>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">♟ Play As</div>
+          <div class="play-section-body">
+            <div class="color-pills">
+              <div class="color-pill selected" id="fr-pill-white" onclick="frSelectColor('white')">♙ White</div>
+              <div class="color-pill" id="fr-pill-black" onclick="frSelectColor('black')">♟ Black</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="play-section">
+          <div class="play-section-header">⏱ Time Control</div>
+          <div class="play-section-body">
+            <div class="play-toggle-row">
+              <span class="play-toggle-label">Enable Time Control</span>
+              <label class="toggle-switch"><input type="checkbox" id="fr-timecontrol" onchange="frToggleTime()"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="play-field" id="fr-time-field" style="display:none">
+              <div class="play-label">Minutes per side (1–180)</div>
+              <input type="number" class="play-input" id="fr-time-min" min="1" max="180" value="10">
+            </div>
+          </div>
+        </div>
+
+        <button class="btn primary" onclick="startFriendMatch()">👥 Start Friend Match</button>
+
+      </div><!-- end friend page -->
+
       <!-- ── PAGE: Tournaments (🏆 Championship) ─── -->
       <div class="play-page" id="play-page-tournaments">
         <div id="tour-root"></div>
@@ -990,7 +1032,7 @@
           <div class="game-over-reason" id="game-over-reason"></div>
           <div class="game-over-reason" id="game-over-elo" style="display:none;font-weight:600"></div>
           <div class="btn-row" style="margin-top:4px">
-            <button class="btn primary sm" onclick="playSubSwitch('playbot')">🔄 New Game</button>
+            <button class="btn primary sm" onclick="friendOrBotPage()">🔄 New Game</button>
           </div>
         </div>
 
@@ -1440,6 +1482,7 @@
 <script src="static/js/shared/personality.js"></script>
 <script src="static/js/play/bot-builder.js"></script>
 <script src="static/js/play/lichess.js"></script>
+<script src="static/js/play/friend.js"></script>
 <script src="static/js/analysis/review.js"></script>
 <script>
 // ── Generic section collapse/expand (Make Bot page cleanup) ──

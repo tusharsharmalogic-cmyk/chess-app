@@ -927,7 +927,7 @@
   // takes the full screen (mobile-friendly).
   function updatePlayBoardVisibility() {
     const pzActive = (typeof pzState !== 'undefined' && pzState && pzState.active);
-    const gameActive = playState.active || (typeof bvbState !== 'undefined' && bvbState && bvbState.active) || pzActive;
+    const gameActive = playState.active || (typeof bvbState !== 'undefined' && bvbState && bvbState.active) || (typeof frState !== 'undefined' && frState && frState.active) || pzActive;
     document.body.classList.toggle('play-board-hidden', !gameActive);
   }
 

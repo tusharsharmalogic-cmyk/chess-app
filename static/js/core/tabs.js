@@ -138,13 +138,18 @@
       });
       const _pgActive = typeof playState !== 'undefined' && playState && playState.active && playState.status === 'playing';
       const _bvActive = typeof bvbState !== 'undefined' && bvbState && bvbState.active;
-      if (!_tourSubOpen && (_pgActive || _bvActive)) {
+      const _frActive = typeof frState !== 'undefined' && frState && frState.active;
+      if (!_tourSubOpen && (_pgActive || _bvActive || _frActive)) {
         document.getElementById('clock-top-row').classList.add('show');
         document.getElementById('clock-bottom-row').classList.add('show');
-        const _tc = _bvActive ? bvbState.timeControl : playState.timeControl;
+        const _tc = _frActive ? frState.timeControl : (_bvActive ? bvbState.timeControl : playState.timeControl);
         document.getElementById('clock-player-time').style.display = _tc ? '' : 'none';
         document.getElementById('clock-bot-time').style.display = _tc ? '' : 'none';
-        if (_bvActive) {
+        if (_frActive) {
+          if (typeof frUpdateCapturedDisplay === 'function') frUpdateCapturedDisplay();
+          if (typeof frUpdateClocks === 'function') frUpdateClocks();
+          if (typeof frUpdateLabelsAndClocks === 'function') frUpdateLabelsAndClocks();
+        } else if (_bvActive) {
           if (typeof updateBvbCapturedDisplay === 'function') updateBvbCapturedDisplay();
           if (typeof updateBvbClocks === 'function') updateBvbClocks();
         } else {
@@ -403,7 +408,7 @@
   }
 
   function playSubSwitch(page) {
-    ['makebot','playbot','botvsbot','tournaments','history','puzzles','lichess'].forEach(p => {
+    ['makebot','playbot','botvsbot','friend','tournaments','history','puzzles','lichess'].forEach(p => {
       const sb = document.getElementById('sb-' + p);
       const pg = document.getElementById('play-page-' + p);
       if (sb) sb.classList.toggle('active', p === page);
