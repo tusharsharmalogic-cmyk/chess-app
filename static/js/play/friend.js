@@ -310,6 +310,7 @@ function frHandleSquareTap(square) {
   const move = frGame.move({ from: playSelectedSquare, to: square, promotion: promo });
   if (move !== null) {
     clearPlayTapSelection();
+    if (window.SoundFX) SoundFX.playForMove(frGame, move);
 
     // Record time
     const now = Date.now();

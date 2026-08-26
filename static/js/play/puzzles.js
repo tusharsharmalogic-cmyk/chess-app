@@ -192,6 +192,7 @@ function handlePuzzleSquareTap(square) {
       pzClearTapSelection();
 
       if (uci === pzState.puzzle.solution[pzState.solIdx]) {
+        if (window.SoundFX) SoundFX.playForMove(g, mv);
         pzCorrectMove(mv);
       } else {
         g.undo();                       // revert wrong move
@@ -241,6 +242,7 @@ function pzApplyUci(uciStr) {
     promotion: uciStr.slice(4) || undefined,
   });
   if (mv) {
+    if (window.SoundFX) SoundFX.playForMove(g, mv);
     board.position(g.fen());
     pzDrawLastMove(mv);
   }
