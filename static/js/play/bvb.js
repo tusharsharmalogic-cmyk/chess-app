@@ -309,6 +309,7 @@ function bvbHandleGameOver() {
   stopBvbClock();
   bvbState.active = false;
   hideBvbTurnDots();
+  if (window.SoundFX) SoundFX.play('gameend');
   document.getElementById('bvb-nav-row').classList.remove('disabled');
 
   const blackBotName = document.getElementById('clock-bot-label').textContent.replace('♟ ', '').trim();

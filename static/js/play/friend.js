@@ -420,6 +420,7 @@ function frHandleGameOver() {
 function frGameOver(title, reason) {
   frStopClock();
   frState.active = false;
+  if (window.SoundFX) SoundFX.play('gameend');
 
   const b = document.getElementById('game-over-banner');
   document.getElementById('game-over-title').textContent  = title;

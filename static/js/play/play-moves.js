@@ -274,6 +274,7 @@ function checkPlayGameOver() {
   }
 
   showGameOver(title, reason);
+  if (window.SoundFX) SoundFX.play('gameend');
   personalityEngine.onGameEnd(playGame);
   autoSavePlayState();
   if (playGame.history().length > 0) {
@@ -292,6 +293,7 @@ function endGame(title, reason) {
   playState.active = false;
   playState.status = 'over';
   showGameOver(title, reason);
+  if (window.SoundFX) SoundFX.play('gameend');
   personalityEngine.onGameEnd(playGame);
   autoSavePlayState();
   if (playGame.history().length > 0) {
