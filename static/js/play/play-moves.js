@@ -295,6 +295,9 @@ function endGame(title, reason) {
   showGameOver(title, reason);
   if (window.SoundFX) SoundFX.play('gameend');
   personalityEngine.onGameEnd(playGame);
+  // Restore eval bar for Analysis/Review tabs
+  const _ec = document.querySelector('.eval-container');
+  if (_ec) _ec.style.display = '';
   autoSavePlayState();
   if (playGame.history().length > 0) {
     savePlayGameToHistory(title, reason);

@@ -421,6 +421,9 @@ function frGameOver(title, reason) {
   frStopClock();
   frState.active = false;
   if (window.SoundFX) SoundFX.play('gameend');
+  // Restore eval bar for Analysis/Review tabs
+  const _ec = document.querySelector('.eval-container');
+  if (_ec) _ec.style.display = '';
 
   const b = document.getElementById('game-over-banner');
   document.getElementById('game-over-title').textContent  = title;
