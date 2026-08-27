@@ -21,7 +21,7 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 - Imported games manage karo (add, list, delete)
 
 ### 🎨 Appearance — Piece Styles & Board Colors (NEW)
-- **30+ Lichess open-source piece sets** built-in (`img/chesspieces/`) — cburnett, merida, alpha, anarcandy, california, cardinal, celtic, chess7, chessnut, companion, cooke, disguised, dubrovny, fantasy, firi, fresca, gioco, governor, horsey, icpieces, kiwen-suwi, kosal, leipzig, letter, maestro, monarchy, mono, mpchess, papercut, pirouetti, pixel, reillycraig, rhosgfx, riohacha, shahi-ivory-brown, shapes, spatial, staunty, tatiana, totoy, wikipedia, xkcd...
+- **40+ Lichess open-source piece sets** built-in (`img/chesspieces/`) — alpha, anarcandy, caliente, california, cardinal, celtic, cburnett, chess7, chessnut, companion, cooke, disguised, dubrovny, fantasy, firi, fresca, gioco, governor, horsey, icpieces, kiwen-suwi, kosal, leipzig, letter, maestro, merida, monarchy, mono, mpchess, papercut, pirouetti, pixel, reillycraig, rhosgfx, riohacha, shahi-ivory-brown, shapes, spatial, staunty, tatiana, totoy, wikipedia, xkcd...
 - **Customizable board colors** — light/dark square color pickers (Settings tab se)
 - Piece set + board colors backend par save hote hain (`play_data/appearance.json`) — reload par yaad rehte hain
 - `/api/piece-sets` endpoint automatically saare available sets list karta hai
@@ -46,6 +46,15 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 - Do bots ko aapas mein khilao — alag-alag personalities ke saath
 - Move delay slider (1–3000 ms), optional time control
 - Pause/Resume, Stop, paused state mein move browsing, live PGN copy
+
+### 👥 Play with Friend (NEW)
+- **Local 2-player** mode — shared screen par dono players alternate turns karte hain
+- **Auto board flip** — har move ke baad board automatically flip hota hai, har player apne pieces neeche dekhta hai
+- Player names, clocks, captured pieces sab flip ke saath rotate hote hain
+- Optional **time control** (1–180 min per side) — clocks live hote hain, low time par red indicator
+- **Starting PGN/FEN** support — kisi bhi position se start karo
+- Game ends (checkmate/stalemate/draw) par result banner + history save
+- Color choice — kaun sa player kaun sa color lega woh decide karo
 
 ### 🏆 Tournament Mode
 - Multiple bots ka **round-robin / elimination (Championship knockout)** tournament client-side run hota hai
@@ -97,8 +106,15 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 - Eval graph (canvas chart), review history save/load
 - Analysis tab mein review badges PGN moves par superfix ke roop mein dikhte hain
 
+### 🔊 Sound Effects (NEW)
+- **4 built-in chess sounds** — Move, Capture, Check, GameEnd (OGG format in `static/sounds/`)
+- `SoundFX` API — auto-detects correct sound from chess.js game state (game end > check > capture > normal move)
+- **Mute/unmute toggle** — `SoundFX.setEnabled(false)` se control karo
+- **Debounced playback** — rapid move navigation mein sounds stack nahi hote (60ms debounce)
+- Smooth, non-intrusive audio — browser audio API se, no external dependencies
+
 ### 📜 History
-- Saare games ka record — **structured collapsible groups** (Player vs Bot / Bot vs Bot alag-alag sections)
+- Saare games ka record — **structured collapsible groups** (Player vs Bot / Bot vs Bot / Play with Friend alag-alag sections)
 - Multi-select delete, clear all
 - Kisi bhi game ko Analysis ya Review mein directly open karo
 - Imported games ka alag section (PGN paste / .pgn/.txt file upload)
@@ -179,6 +195,7 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 │       │   ├── play-ui.js       # Captured pieces, arrows, eval, flip, BvB UI helpers
 │       │   ├── bvb.js           # Bot vs Bot — full game loop, clock, browse, pause/stop
 │       │   ├── bot-builder.js   # Visual Bot & Personality Builder (rule triggers UI)
+│       │   ├── friend.js        # Play with Friend — local 2-player, auto-flip, clocks
 │       │   ├── puzzles.js       # Tactics puzzle mode — solve HUD, timer, points
 │       │   ├── tournament.js    # Tournament + Duo Fight — pairing, rounds, score battle
 │       │   └── lichess.js       # Lichess hub page + games pull UI
@@ -190,7 +207,8 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 │       └── shared/
 │           ├── history.js       # History tab — grouped list, detail, eval chart, save/delete
 │           ├── personality.js   # Bot personality engine + dialogue bubbles
-│           └── play-settings.js # UI state persistence → /api/play-settings
+│           ├── play-settings.js # UI state persistence → /api/play-settings
+│           └── sound.js         # Chess sound effects (Move/Capture/Check/GameEnd)
 │
 └── play_data/            # Auto-generated runtime data (touch mat karna)
     ├── bots.json · profile.json · history.json
