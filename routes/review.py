@@ -306,30 +306,72 @@ def _load_openings_book():
 
     Each PGN entry like '1. e4 e5 2. Nf3 Nc6 3. Bb5' is stripped to
     'e4 e5 Nf3 Nc6 Bb5' and used as the lookup key.
+    Falls back to a small built-in book when the JSON file is missing.
     """
+    book = {}
+
+    # ── Try openings.json first ────────────────────────────────────
     try:
         with open(_OPENINGS_JSON, "r", encoding="utf-8") as fh:
             data = json.load(fh)
+        for entry in data:
+            pgn = (entry.get("pgn") or "").strip()
+            if not pgn:
+                continue
+            # Strip move numbers:  "1. e4 e5 2. Nf3" → "e4 e5 Nf3"
+            san = re.sub(r"\d+\.\s*", "", pgn).strip()
+            san = re.sub(r"\s+", " ", san)  # normalise whitespace
+            if san:
+                book[san] = {
+                    "name": entry.get("name", ""),
+                    "eco": entry.get("eco", ""),
+                }
+        if book:
+            return book
     except Exception:
-        return {}
+        pass
 
-    book = {}
-    for entry in data:
-        pgn = (entry.get("pgn") or "").strip()
-        if not pgn:
-            continue
-        # Strip move numbers:  "1. e4 e5 2. Nf3" → "e4 e5 Nf3"
-        san = re.sub(r"\d+\.\s*", "", pgn).strip()
-        san = re.sub(r"\s+", " ", san)  # normalise whitespace
-        if san:
-            book[san] = {
-                "name": entry.get("name", ""),
-                "eco": entry.get("eco", ""),
-            }
-    return book
+    # ── Fallback: hardcoded essentials ─────────────────────────────
+    fallback = {
+        "e4": "King\u2019s Pawn Opening", "e4 e5": "King\u2019s Pawn Game",
+        "e4 e5 Nf3 Nc6 Bb5": "Ruy Lopez", "e4 e5 Nf3 Nc6 Bb5 a6": "Ruy Lopez, Morphy Defence",
+        "e4 e5 Nf3 Nc6 Bc4": "Italian Game",
+        "e4 e5 Nf3 Nc6 Bc4 Bc5": "Italian Game, Giuoco Piano",
+        "e4 e5 Nf3 Nc6 d4": "Scotch Game",
+        "e4 e5 Nf3 Nf6": "Petrov Defence",
+        "e4 e5 Nf3 d6": "Philidor Defence",
+        "e4 c5": "Sicilian Defence",
+        "e4 c5 Nf3 Nc6": "Sicilian Defence, Open",
+        "e4 c5 Nf3 d6": "Sicilian Defence, Modern",
+        "e4 e6": "French Defence",
+        "e4 e6 d4 d5": "French Defence, Main Line",
+        "e4 c6": "Caro-Kann Defence",
+        "e4 c6 d4 d5": "Caro-Kann Defence, Main Line",
+        "e4 d5": "Scandinavian Defence",
+        "e4 d6": "Pirc Defence",
+        "e4 g6": "Modern Defence",
+        "e4 Nf6": "Alekhine Defence",
+        "e4 Nc6": "Nimzowitsch Defence",
+        "d4": "Queen\u2019s Pawn Opening", "d4 d5": "Queen\u2019s Pawn Game",
+        "d4 d5 c4": "Queen\u2019s Gambit",
+        "d4 d5 c4 e6": "Queen\u2019s Gambit Declined",
+        "d4 d5 c4 c6": "Slav Defence",
+        "d4 Nf6": "Indian Defence",
+        "d4 Nf6 c4 g6": "King\u2019s Indian Defence",
+        "d4 Nf6 c4 e6": "Nimzo-Indian / Queen\u2019s Indian",
+        "d4 Nf6 c4 e6 Nc3": "Nimzo-Indian Defence",
+        "d4 Nf6 c4 g6 Nc3 d5": "Grunfeld Defence",
+        "d4 f5": "Dutch Defence",
+        "c4": "English Opening", "c4 e5": "English, Reversed Sicilian",
+        "Nf3": "Reti Opening",
+        "f4": "Bird\u2019s Opening",
+        "b4": "Sokolsky Opening",
+    }
+    return fallback
 
 
 OPENING_BOOK = _load_openings_book()
+print(f"[review] Opening book loaded: {len(OPENING_BOOK)} entries from {_OPENINGS_JSON}")
 
 # Sort by number of moves descending so longest match wins
 _OPENING_BOOK_SORTED = sorted(
@@ -408,5 +450,7 @@ def review_detect_opening():
 
     result = detect_opening(pgn)
     if result:
+        print(f"[review/opening] Detected: {result['name']} ({result.get('eco', '')})")
         return jsonify({"ok": True, "opening": result})
+    print(f"[review/opening] No match for PGN ({len(pgn)} chars)")
     return jsonify({"ok": False, "error": "Opening not recognized"})

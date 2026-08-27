@@ -418,7 +418,12 @@
         infoEl.textContent = 'Custom or unbooked opening sequence';
       }
     } catch(e) {
-      box.style.display = 'none';
+      console.error('[rvDetectOpening] fetch error:', e);
+      // Show error state instead of hiding the box
+      box.style.display = '';
+      nameEl.textContent = 'Opening not recognized';
+      nameEl.style.color = 'var(--text3)';
+      infoEl.textContent = 'Could not detect opening';
     }
   }
 
