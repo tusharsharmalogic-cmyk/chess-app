@@ -443,6 +443,75 @@
   }
 
   // PGN
+  // ── Opening detection (Analysis/PGN tab) ──────────────────
+  let _analysisOpeningTimer = null;
+
+  async function detectAnalysisOpening() {
+    const box  = document.getElementById('analysis-opening-box');
+    const nameEl = document.getElementById('analysis-opening-name');
+    const infoEl = document.getElementById('analysis-opening-info');
+    if (!box || !nameEl || !infoEl) return;
+
+    // Build PGN from moves up to the current position
+    if (!moveHistory || moveHistory.length === 0) {
+      box.style.display = 'none';
+      return;
+    }
+
+    // Show loading
+    box.style.display = '';
+    nameEl.textContent = 'Detecting opening...';
+    nameEl.style.color = 'var(--text3)';
+    infoEl.textContent = '';
+
+    // Build a temporary Chess with moves up to current position
+    try {
+      const tmpGame = new Chess(startFen);
+      for (let i = 0; i <= currentMoveIdx && i < moveHistory.length; i++) {
+        tmpGame.move(moveHistory[i].san);
+      }
+      const partialPgn = tmpGame.pgn();
+      if (!partialPgn || !partialPgn.trim()) {
+        box.style.display = 'none';
+        return;
+      }
+
+      const res = await fetch(`${FLASK_URL}/review/opening`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pgn: partialPgn }),
+      });
+      const data = await res.json();
+
+      if (data.ok && data.opening) {
+        const op = data.opening;
+        nameEl.textContent = op.eco ? `${op.name} (${op.eco})` : op.name;
+        nameEl.style.color = 'var(--accent)';
+        const halfMoves = op.moves_played || 0;
+        let info = `${halfMoves} half-moves in book`;
+        if (op.move_text) info += ' \u2022 ' + op.move_text;
+        infoEl.textContent = info;
+        box.style.display = '';
+      } else {
+        box.style.display = '';
+        nameEl.textContent = 'Opening not recognized';
+        nameEl.style.color = 'var(--text3)';
+        infoEl.textContent = '';
+      }
+    } catch(e) {
+      console.error('[detectAnalysisOpening] error:', e);
+      box.style.display = '';
+      nameEl.textContent = 'Opening not recognized';
+      nameEl.style.color = 'var(--text3)';
+      infoEl.textContent = '';
+    }
+  }
+
+  function _debounceAnalysisOpening() {
+    if (_analysisOpeningTimer) clearTimeout(_analysisOpeningTimer);
+    _analysisOpeningTimer = setTimeout(detectAnalysisOpening, 200);
+  }
+
   function loadPGN() {
     _analysisReviewMoves = null;   // fresh load — no review classification
     const pgn = document.getElementById('pgn-input').value.trim();
@@ -513,6 +582,8 @@
     };
     _restoreAnalysisPlayerRows();
     _applyAnalysisClockForIdx(currentMoveIdx);
+    // Detect opening for current PGN position
+    detectAnalysisOpening();
   }
 
   function exportPGN() {
@@ -857,6 +928,8 @@
     if (analysisPlayerInfo) {
       _applyAnalysisClockForIdx(idx);
     }
+    // Update opening detection as user navigates
+    _debounceAnalysisOpening();
   }
 
   function updatePGNMovesHighlight(idx) {
@@ -917,6 +990,9 @@
     if (analysisPlayerInfo) {
       _applyAnalysisClockForIdx(-1);
     }
+    // Hide opening box at start position
+    const oBox = document.getElementById('analysis-opening-box');
+    if (oBox) oBox.style.display = 'none';
   }
 
   function goToEnd() {

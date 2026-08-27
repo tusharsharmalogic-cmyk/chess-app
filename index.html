@@ -201,6 +201,15 @@
       <div class="fen-label">Move History</div>
       <div class="pgn-moves" id="pgn-moves"></div>
       <div class="copied-flash" id="pgn-copied-flash" style="text-align:right;margin-top:2px">✓ Copied!</div>
+      <div id="analysis-opening-box" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:4px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:13px">📖</span>
+          <div style="min-width:0">
+            <div id="analysis-opening-name" style="font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+            <div id="analysis-opening-info" style="font-size:10px;color:var(--text3);margin-top:1px"></div>
+          </div>
+        </div>
+      </div>
       <div class="fen-area" style="margin-top:4px">
         <div class="fen-label">Load PGN</div>
         <textarea id="pgn-input" placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5..."></textarea>
