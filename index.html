@@ -1400,6 +1400,17 @@
           </div>
         </div>
 
+        <!-- Opening detected box -->
+        <div id="rv-opening-box" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:13px">&#x1F4D6;</span>
+            <div style="flex:1;min-width:0">
+              <div id="rv-opening-name" style="font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+              <div id="rv-opening-info" style="font-size:10px;color:var(--text3);margin-top:1px"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Row 8: Open in Analysis (PGN only, no player names) -->
         <button class="btn" onclick="rvOpenInAnalysisPgnOnly()" style="width:100%">🔍 Open in Analysis</button>
 

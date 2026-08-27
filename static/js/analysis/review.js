@@ -373,6 +373,53 @@
     resetEval();
     _applyReviewClockForIdx(-1);
     rvShowCurrentMove(true);
+    // Detect opening from PGN
+    rvDetectOpening();
+  }
+
+  // ── Opening Detection ──────────────────────────────────────────
+  async function rvDetectOpening() {
+    if (!rvState.pgn) return;
+    const box = document.getElementById('rv-opening-box');
+    const nameEl = document.getElementById('rv-opening-name');
+    const infoEl = document.getElementById('rv-opening-info');
+    if (!box || !nameEl || !infoEl) return;
+
+    // Show loading state
+    box.style.display = '';
+    nameEl.textContent = 'Detecting opening...';
+    nameEl.style.color = 'var(--text3)';
+    infoEl.textContent = '';
+
+    try {
+      const res = await fetch(`${FLASK_URL}/review/opening`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pgn: rvState.pgn }),
+      });
+      const data = await res.json();
+
+      if (data.ok && data.opening) {
+        const op = data.opening;
+        nameEl.textContent = op.eco ? `${op.name} (${op.eco})` : op.name;
+        nameEl.style.color = 'var(--accent)';
+        const halfMoves = op.moves_played || 0;
+        const fullMoves = Math.ceil(halfMoves / 2);
+        const totalMoves = op.total_moves || 0;
+        let info = `${halfMoves} half-moves in book`;
+        if (op.move_text) info += ` \u2022 ${op.move_text}`;
+        infoEl.textContent = info;
+        box.style.display = '';
+      } else {
+        // No opening found
+        box.style.display = '';
+        nameEl.textContent = 'Opening not recognized';
+        nameEl.style.color = 'var(--text3)';
+        infoEl.textContent = 'Custom or unbooked opening sequence';
+      }
+    } catch(e) {
+      box.style.display = 'none';
+    }
   }
 
   // Fill the player-row name/clock/captured-piece UI (reusing the same
@@ -566,6 +613,9 @@
     document.getElementById('analysis-bottom-row').classList.remove('show');
     const cr = document.getElementById('rv-classification-row');
     if (cr) cr.style.display = 'none';
+    // Hide opening box when going back to summary
+    const ob = document.getElementById('rv-opening-box');
+    if (ob) ob.style.display = 'none';
     rvShowSummary();
   }
 
@@ -944,5 +994,7 @@
     document.getElementById('analysis-bottom-row').classList.remove('show');
     const cr = document.getElementById('rv-classification-row');
     if (cr) cr.style.display = 'none';
+    const ob = document.getElementById('rv-opening-box');
+    if (ob) ob.style.display = 'none';
     rvShowPhase('setup');
   }

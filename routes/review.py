@@ -9,6 +9,7 @@ import uuid
 import time
 import math
 import io
+import re
 
 import chess
 import chess.engine
@@ -288,3 +289,124 @@ def review_analyze():
             "X-Accel-Buffering": "no",
         }
     )
+
+
+# ==========================================================================
+#  OPENING BOOK — loaded from openings.json (22k+ openings)
+# ============================================================================
+
+_OPENINGS_JSON = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "openings.json",
+)
+
+
+def _load_openings_book():
+    """Load openings.json and build a SAN-based lookup dict.
+
+    Each PGN entry like '1. e4 e5 2. Nf3 Nc6 3. Bb5' is stripped to
+    'e4 e5 Nf3 Nc6 Bb5' and used as the lookup key.
+    """
+    try:
+        with open(_OPENINGS_JSON, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except Exception:
+        return {}
+
+    book = {}
+    for entry in data:
+        pgn = (entry.get("pgn") or "").strip()
+        if not pgn:
+            continue
+        # Strip move numbers:  "1. e4 e5 2. Nf3" → "e4 e5 Nf3"
+        san = re.sub(r"\d+\.\s*", "", pgn).strip()
+        san = re.sub(r"\s+", " ", san)  # normalise whitespace
+        if san:
+            book[san] = {
+                "name": entry.get("name", ""),
+                "eco": entry.get("eco", ""),
+            }
+    return book
+
+
+OPENING_BOOK = _load_openings_book()
+
+# Sort by number of moves descending so longest match wins
+_OPENING_BOOK_SORTED = sorted(
+    OPENING_BOOK.items(),
+    key=lambda kv: len(kv[0].split()),
+    reverse=True,
+)
+
+
+def detect_opening(pgn_text):
+    """Detect the chess opening from a PGN string.
+
+    Returns dict with 'name', 'eco', 'moves_played', 'move_text',
+    'total_moves' — or None when nothing matches.
+    """
+    try:
+        game = chess.pgn.read_game(io.StringIO(pgn_text))
+        if game is None:
+            return None
+    except Exception:
+        return None
+
+    board = game.board()
+    moves_san = []
+    for move in game.mainline_moves():
+        try:
+            san = board.san(move)
+            moves_san.append(san)
+            board.push(move)
+        except Exception:
+            break
+
+    if not moves_san:
+        return None
+
+    # Build incremental move strings and find the longest book match.
+    best_name = None
+    best_eco = None
+    best_len = 0
+    best_key = None
+
+    for i in range(1, len(moves_san) + 1):
+        prefix = " ".join(moves_san[:i])
+        hit = OPENING_BOOK.get(prefix)
+        if hit and i > best_len:
+            best_name = hit["name"]
+            best_eco = hit.get("eco", "")
+            best_len = i
+            best_key = prefix
+
+    if best_name:
+        return {
+            "name": best_name,
+            "eco": best_eco,
+            "moves_played": best_len,
+            "move_text": best_key,
+            "total_moves": len(moves_san),
+        }
+
+    return None
+
+
+@review_bp.route("/review/opening", methods=["POST"])
+def review_detect_opening():
+    """Detect the chess opening from a PGN.
+    POST body: { pgn: "..." }
+    Returns: { ok: true, opening: {...} } or { ok: false, error: "..." }
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    pgn = data.get("pgn", "").strip()
+    if not pgn:
+        return jsonify({"ok": False, "error": "PGN required"}), 400
+
+    result = detect_opening(pgn)
+    if result:
+        return jsonify({"ok": True, "opening": result})
+    return jsonify({"ok": False, "error": "Opening not recognized"})
