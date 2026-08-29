@@ -33,6 +33,7 @@ GAME_FILE_BVB     = os.path.join(DATA_DIR, "current_game_bvb.json")
 GAME_FILE_TOURN   = os.path.join(DATA_DIR, "current_game_tournament.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "game_history.json")
 PLAYER_FILE  = os.path.join(DATA_DIR, "player.json")
+LEADERBOARD_FILE = os.path.join(DATA_DIR, "leaderboard.json")
 
 STOCKFISH_PATH = os.environ.get("STOCKFISH_PATH", "stockfish")
 
@@ -92,6 +93,100 @@ def load_player():
 
 def save_player(player):
     save_json_file(PLAYER_FILE, player)
+
+
+# ── Leaderboard helpers ──────────────────────────────────────────────────────
+def load_leaderboard():
+    data = load_json_file(LEADERBOARD_FILE)
+    return data if isinstance(data, dict) else {}
+
+
+def save_leaderboard(lb):
+    save_json_file(LEADERBOARD_FILE, lb)
+
+
+def _lb_key(entity_type, entity_id):
+    return f"{entity_type}:{entity_id}"
+
+
+def _lb_entry(lb, key, name, entity_type, elo):
+    if key not in lb:
+        lb[key] = {
+            "name": name,
+            "type": entity_type,
+            "elo": elo,
+            "points": 0,
+            "history": [],  # [{ts, opponent, result, elo_delta, points, context}]
+        }
+    return lb[key]
+
+
+def _lb_record_match(lb, winner_key, loser_key, w_name, w_type, w_elo,
+                      l_name, l_type, l_elo, elo_delta):
+    """Record a match result in the leaderboard.
+    Winner gets: +5 + abs(elo_delta) points.
+    Loser gets:  -3 - abs(elo_delta) points.
+    """
+    ts = int(time.time())
+    abs_delta = abs(elo_delta)
+
+    w_entry = _lb_entry(lb, winner_key, w_name, w_type, w_elo)
+    w_entry["elo"] = w_elo
+    w_pts = 5 + abs_delta
+    w_entry["points"] += w_pts
+    w_entry["history"].insert(0, {
+        "ts": ts, "opponent": l_name, "result": "win",
+        "elo_delta": abs_delta, "points": w_pts, "context": "match",
+    })
+    w_entry["history"] = w_entry["history"][:50]
+
+    l_entry = _lb_entry(lb, loser_key, l_name, l_type, l_elo)
+    l_entry["elo"] = l_elo
+    l_pts = -(3 + abs_delta)
+    l_entry["points"] += l_pts
+    l_entry["history"].insert(0, {
+        "ts": ts, "opponent": w_name, "result": "loss",
+        "elo_delta": -abs_delta, "points": l_pts, "context": "match",
+    })
+    l_entry["history"] = l_entry["history"][:50]
+
+
+def _lb_record_draw(lb, key1, key2, n1, t1, e1, n2, t2, e2, delta):
+    """Record a draw — no points change, just track the game."""
+    ts = int(time.time())
+    entry1 = _lb_entry(lb, key1, n1, t1, e1)
+    entry1["elo"] = e1
+    entry1["history"].insert(0, {
+        "ts": ts, "opponent": n2, "result": "draw",
+        "elo_delta": delta, "points": 0, "context": "match",
+    })
+    entry1["history"] = entry1["history"][:50]
+    entry2 = _lb_entry(lb, key2, n2, t2, e2)
+    entry2["elo"] = e2
+    entry2["history"].insert(0, {
+        "ts": ts, "opponent": n1, "result": "draw",
+        "elo_delta": -delta, "points": 0, "context": "match",
+    })
+    entry2["history"] = entry2["history"][:50]
+
+
+def _lb_record_tournament(lb, key, name, etype, elo, place):
+    """Record tournament bonus. place: 1, 2, or 3."""
+    bonus = {1: 200, 2: 100, 3: 50}.get(place, 0)
+    if bonus <= 0:
+        return
+    entry = _lb_entry(lb, key, name, etype, elo)
+    entry["elo"] = elo
+    entry["points"] += bonus
+    entry["history"].insert(0, {
+        "ts": int(time.time()),
+        "opponent": f"Tournament #{place}",
+        "result": "tournament",
+        "elo_delta": 0,
+        "points": bonus,
+        "context": f"tournament_top{place}",
+    })
+    entry["history"] = entry["history"][:50]
 
 
 # ── Engine helper (shared global from c.py) ──────────────────────────────────
@@ -399,6 +494,33 @@ def submit_result():
     bot["games_played"] = bot.get("games_played", 0) + 1
     save_bots(bots)
 
+    # ── Leaderboard record ──
+    lb = load_leaderboard()
+    if score == 0.5:
+        _lb_record_draw(
+            lb,
+            _lb_key("player", "user"), _lb_key("bot", bot_id),
+            player.get("name", "Player"), "player", new_elo,
+            bot.get("name", bot_id), "bot", bot_new_elo, delta,
+        )
+    else:
+        # Winner/loser determined by score: 1=player won, 0=bot won
+        if score == 1:
+            _lb_record_match(
+                lb,
+                _lb_key("player", "user"), _lb_key("bot", bot_id),
+                player.get("name", "Player"), "player", new_elo,
+                bot.get("name", bot_id), "bot", bot_new_elo, delta,
+            )
+        else:
+            _lb_record_match(
+                lb,
+                _lb_key("bot", bot_id), _lb_key("player", "user"),
+                bot.get("name", bot_id), "bot", bot_new_elo,
+                player.get("name", "Player"), "player", new_elo, -delta,
+            )
+    save_leaderboard(lb)
+
     return jsonify({
         "ok": True,
         "old_elo": old_elo,
@@ -453,6 +575,20 @@ def bvb_match_result():
     b_bot["bot_elo"] = b_new
     b_bot["games_played"] = b_bot.get("games_played", 0) + 1
     save_bots(bots)
+
+    # ── Leaderboard record ──
+    lb = load_leaderboard()
+    wk = _lb_key("bot", white_id)
+    bk = _lb_key("bot", black_id)
+    wn = w_bot.get("name", white_id)
+    bn = b_bot.get("name", black_id)
+    if w_score == 0.5:
+        _lb_record_draw(lb, wk, bk, wn, "bot", w_new, bn, "bot", b_new, w_delta)
+    elif w_score == 1.0:
+        _lb_record_match(lb, wk, bk, wn, "bot", w_new, bn, "bot", b_new, w_delta)
+    else:
+        _lb_record_match(lb, bk, wk, bn, "bot", b_new, wn, "bot", w_new, -w_delta)
+    save_leaderboard(lb)
 
     return jsonify({
         "ok": True,
@@ -634,3 +770,61 @@ def classify():
         return jsonify(analyse_move(engine, board_before, move, depth))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# ==========================================================================
+#  LEADERBOARD
+# ==========================================================================
+
+@play_bp.route("/play/leaderboard", methods=["GET"])
+def get_leaderboard():
+    lb = load_leaderboard()
+    # Sort by points descending, then by elo descending
+    entries = []
+    for key, entry in lb.items():
+        entries.append({
+            "key": key,
+            "name": entry.get("name", "?"),
+            "type": entry.get("type", "bot"),
+            "elo": entry.get("elo", 1200),
+            "points": entry.get("points", 0),
+        })
+    entries.sort(key=lambda e: (-e["points"], -e["elo"]))
+    return jsonify({"entries": entries})
+
+
+@play_bp.route("/play/leaderboard/history/<key>", methods=["GET"])
+def get_leaderboard_history(key):
+    lb = load_leaderboard()
+    entry = lb.get(key)
+    if not entry:
+        return jsonify({"error": "Player not found"}), 404
+    return jsonify({
+        "name": entry.get("name", "?"),
+        "type": entry.get("type", "bot"),
+        "elo": entry.get("elo", 1200),
+        "points": entry.get("points", 0),
+        "history": entry.get("history", [])[:10],
+    })
+
+
+@play_bp.route("/play/leaderboard/tournament-top", methods=["POST"])
+def leaderboard_tournament_top():
+    """Award tournament bonus points to top 3. Called after tournament completes."""
+    data = request.get_json() or {}
+    top3 = data.get("top3", [])  # [{key, name, type, elo, place}]
+    if not top3:
+        return jsonify({"ok": True})
+
+    lb = load_leaderboard()
+    for entry in top3:
+        key = entry.get("key", "")
+        name = entry.get("name", "?")
+        etype = entry.get("type", "bot")
+        elo = entry.get("elo", 1200)
+        place = entry.get("place", 0)
+        if key and place in (1, 2, 3):
+            _lb_record_tournament(lb, key, name, etype, elo, place)
+    save_leaderboard(lb)
+    return jsonify({"ok": True})
+

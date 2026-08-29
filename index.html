@@ -263,6 +263,7 @@
         <div class="play-subbtn" id="sb-puzzles" onclick="playSubSwitch('puzzles')">🧩 Puzzle</div>
         <div class="play-subbtn" id="sb-lichess" onclick="playSubSwitch('lichess')">🌐 Lichess</div>
         <div class="play-subbtn" id="sb-friend" onclick="playSubSwitch('friend')">👥 Play Friend</div>
+        <div class="play-subbtn" id="sb-ranking" onclick="playSubSwitch('ranking')">🏅 Ranking</div>
         <div class="play-subbtn" id="sb-history" onclick="playSubSwitch('history')">📜 History</div>
       </div>
 
@@ -871,6 +872,23 @@
       <div class="play-page" id="play-page-tournaments">
         <div id="tour-root"></div>
       </div><!-- end tournaments page -->
+
+      <!-- ── PAGE: Ranking / Leaderboard ────────────── -->
+      <div class="play-page" id="play-page-ranking">
+        <div class="play-section">
+          <div class="play-section-header">🏅 Leaderboard</div>
+          <div id="ranking-list" style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">Loading...</div>
+        </div>
+        <!-- Player detail popup -->
+        <div id="ranking-detail" style="display:none;flex-direction:column;gap:8px;padding:10px 0">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div id="ranking-detail-title" style="font-weight:600;color:var(--text)"></div>
+            <button class="btn sm" onclick="document.getElementById('ranking-detail').style.display='none'">✕</button>
+          </div>
+          <div id="ranking-detail-stats" style="font-size:11px;color:var(--text2)"></div>
+          <div id="ranking-detail-history" style="font-size:11px"></div>
+        </div>
+      </div>
 
       <!-- ── PAGE: Game History ───────────────────── -->
       <div class="play-page" id="play-page-history">
@@ -1525,6 +1543,7 @@
 <script src="static/js/play/play-setup.js"></script>
 <script src="static/js/play/bvb.js"></script>
 <script src="static/js/play/tournament.js"></script>
+<script src="static/js/play/ranking.js"></script>
 <script src="static/js/shared/personality.js"></script>
 <script src="static/js/play/bot-builder.js"></script>
 <script src="static/js/play/lichess.js"></script>

@@ -469,7 +469,7 @@
   }
 
   function playSubSwitch(page) {
-    ['makebot','playbot','botvsbot','friend','tournaments','history','puzzles','lichess'].forEach(p => {
+    ['makebot','playbot','botvsbot','friend','tournaments','history','puzzles','lichess','ranking'].forEach(p => {
       const sb = document.getElementById('sb-' + p);
       const pg = document.getElementById('play-page-' + p);
       if (sb) sb.classList.toggle('active', p === page);
@@ -491,6 +491,8 @@
     }
     // Populate bot selects when switching to botvsbot
     if (page === 'botvsbot') populateBvbSelects();
+    // Load leaderboard when switching to ranking
+    if (page === 'ranking' && typeof renderLeaderboard === 'function') { try { renderLeaderboard(); } catch(e) {} }
     // Load history list when switching to history
     if (page === 'history') { closeHistoryDetail(); renderHistoryList(); renderImportedList(); }
     // Load puzzle list + stats when switching to puzzles

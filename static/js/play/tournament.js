@@ -635,7 +635,7 @@ function _computeTop5(tState) {
   tState.rounds.forEach((round, ri) => {
     round.forEach(m => {
       [m.p1, m.p2].forEach(p => {
-        if (!st[key(p)]) st[key(p)] = { name: p.name, elo: p.elo, type: p.type, wins: 0, out: ri };
+        if (!st[key(p)]) st[key(p)] = { id: p.id, name: p.name, elo: p.elo, type: p.type, wins: 0, out: ri };
       });
       if (m.winner) {
         const w = m.winner === 'p1' ? m.p1 : m.p2;
@@ -685,6 +685,25 @@ async function _archiveTournament() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entry }),
     });
+  } catch(e) { /* ignore */ }
+
+  // ── Leaderboard: award tournament bonus points to top 3 ──
+  try {
+    const top5 = _computeTop5(T);
+    const top3 = top5.slice(0, 3).map((p, i) => ({
+      key: p.type + ':' + p.id,
+      name: p.name,
+      type: p.type,
+      elo: p.elo || 1200,
+      place: i + 1,
+    }));
+    if (top3.length > 0) {
+      await fetch(`${FLASK_URL}/play/leaderboard/tournament-top`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ top3 }),
+      });
+    }
   } catch(e) { /* ignore */ }
 }
 
