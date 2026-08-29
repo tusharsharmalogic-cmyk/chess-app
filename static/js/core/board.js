@@ -776,6 +776,22 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
     'Free Gift':  'badge-special',
   };
 
+  // ── Badge settings (persisted to localStorage) ──────────────────
+  const BADGE_SIZE_MAP = [
+    { fontSize: 10, height: 18, padH: 3 },  // Small
+    { fontSize: 12, height: 22, padH: 4 },  // Medium
+    { fontSize: 15, height: 26, padH: 5 },  // Large
+  ];
+
+  function _loadBadgeSettings() {
+    try {
+      return JSON.parse(localStorage.getItem('boardBadgeSettings')) || {};
+    } catch(e) { return {}; }
+  }
+  function _saveBadgeSettings(s) {
+    try { localStorage.setItem('boardBadgeSettings', JSON.stringify(s)); } catch(e) {}
+  }
+
   function showBoardBadge(toSquare, classification) {
     const badge = document.getElementById('board-badge');
     if (!badge) return;
@@ -792,14 +808,59 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
       const relX = sqRect.left - boardRect.left;
       const relY = sqRect.top - boardRect.top;
       const sqW = sqRect.width;
+      const sqH = sqRect.height;
+
+      // Read user settings
+      const cfg = _loadBadgeSettings();
+      const pos = cfg.position || 'top-right';
+      const sizeIdx = cfg.size != null ? cfg.size : 1;
+      const margin = cfg.margin != null ? cfg.margin : 2;
+      const sz = BADGE_SIZE_MAP[sizeIdx] || BADGE_SIZE_MAP[1];
+
+      // Apply size via inline style
       badge.textContent = sym;
       badge.className = BADGE_CLASS_MAP[classification] || 'badge-good';
       badge.style.display = 'block';
-      badge.style.left = '0px';
-      badge.style.top = relY + 'px';
+      badge.style.fontSize = sz.fontSize + 'px';
+      badge.style.height = sz.height + 'px';
+      badge.style.lineHeight = sz.height + 'px';
+      badge.style.paddingLeft = sz.padH + 'px';
+      badge.style.paddingRight = sz.padH + 'px';
+      badge.style.minWidth = '0';
+
+      // Calculate position based on user setting
+      // First render to measure badge width
+      badge.style.left = '-999px';
+      badge.style.top = '0px';
+      badge.style.right = 'auto';
+      badge.style.bottom = 'auto';
+
       requestAnimationFrame(() => {
-        const badgeW = badge.offsetWidth || 22;
-        badge.style.left = (relX + sqW - badgeW - 2) + 'px';
+        const badgeW = badge.offsetWidth;
+        const badgeH = badge.offsetHeight;
+        let left, top;
+
+        switch(pos) {
+          case 'top-left':
+            left = relX + margin;
+            top = relY + margin;
+            break;
+          case 'top-right':
+            left = relX + sqW - badgeW - margin;
+            top = relY + margin;
+            break;
+          case 'bottom-left':
+            left = relX + margin;
+            top = relY + sqH - badgeH - margin;
+            break;
+          case 'bottom-right':
+          default:
+            left = relX + sqW - badgeW - margin;
+            top = relY + sqH - badgeH - margin;
+            break;
+        }
+        badge.style.left = left + 'px';
+        badge.style.top = top + 'px';
       });
     } catch(e) {
       badge.style.display = 'none';

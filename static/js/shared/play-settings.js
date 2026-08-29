@@ -237,3 +237,95 @@
     setTimeout(initPlaySettings, 100);
   }
 })();
+
+// ── Badge Settings UI (position, size, margin) ────────────────────
+(function() {
+  'use strict';
+  const SIZE_LABELS = ['Small', 'Medium', 'Large'];
+
+  function _loadBadgeCfg() {
+    try { return JSON.parse(localStorage.getItem('boardBadgeSettings')) || {}; } catch(e) { return {}; }
+  }
+  function _saveBadgeCfg(s) {
+    try { localStorage.setItem('boardBadgeSettings', JSON.stringify(s)); } catch(e) {}
+  }
+
+  function _initBadgeSettings() {
+    const cfg = _loadBadgeCfg();
+    const pos = cfg.position || 'top-right';
+    const sizeIdx = cfg.size != null ? cfg.size : 1;
+    const margin = cfg.margin != null ? cfg.margin : 2;
+
+    // Highlight active position button
+    document.querySelectorAll('.badge-pos-btn').forEach(btn => {
+      if (btn.dataset.pos === pos) {
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.background = 'rgba(196,163,90,0.15)';
+        btn.style.color = 'var(--accent)';
+        btn.classList.add('active');
+      } else {
+        btn.style.borderColor = 'var(--border)';
+        btn.style.background = 'var(--bg3)';
+        btn.style.color = 'var(--text)';
+        btn.classList.remove('active');
+      }
+    });
+
+    // Size slider
+    const sizeSlider = document.getElementById('badge-size-slider');
+    const sizeVal = document.getElementById('badge-size-val');
+    if (sizeSlider) {
+      sizeSlider.value = sizeIdx;
+      if (sizeVal) sizeVal.textContent = SIZE_LABELS[sizeIdx] || 'Medium';
+      sizeSlider.oninput = function() {
+        const v = parseInt(this.value);
+        const c = _loadBadgeCfg();
+        c.size = v;
+        _saveBadgeCfg(c);
+        if (sizeVal) sizeVal.textContent = SIZE_LABELS[v] || 'Medium';
+      };
+    }
+
+    // Margin slider
+    const marginSlider = document.getElementById('badge-margin-slider');
+    const marginVal = document.getElementById('badge-margin-val');
+    if (marginSlider) {
+      marginSlider.value = margin;
+      if (marginVal) marginVal.textContent = margin + 'px';
+      marginSlider.oninput = function() {
+        const v = parseInt(this.value);
+        const c = _loadBadgeCfg();
+        c.margin = v;
+        _saveBadgeCfg(c);
+        if (marginVal) marginVal.textContent = v + 'px';
+      };
+    }
+
+    // Position buttons
+    document.querySelectorAll('.badge-pos-btn').forEach(btn => {
+      btn.onclick = function() {
+        const newPos = this.dataset.pos;
+        const c = _loadBadgeCfg();
+        c.position = newPos;
+        _saveBadgeCfg(c);
+        // Update UI
+        document.querySelectorAll('.badge-pos-btn').forEach(b => {
+          b.style.borderColor = 'var(--border)';
+          b.style.background = 'var(--bg3)';
+          b.style.color = 'var(--text)';
+          b.classList.remove('active');
+        });
+        this.style.borderColor = 'var(--accent)';
+        this.style.background = 'rgba(196,163,90,0.15)';
+        this.style.color = 'var(--accent)';
+        this.classList.add('active');
+      };
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initBadgeSettings);
+  } else {
+    setTimeout(_initBadgeSettings, 150);
+  }
+})();

@@ -1488,6 +1488,28 @@
           </label>
         </div>
         <button id="sq-reset-btn" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:inherit;font-size:12px;cursor:pointer;letter-spacing:.4px">↺ Reset Default</button>
+
+      <div class="settings-section" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius,10px);padding:14px;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;color:var(--accent);letter-spacing:.5px;margin-bottom:12px">🏷️ Move Badge</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text2);letter-spacing:.4px">
+            POSITION
+            <div id="badge-pos-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <button class="badge-pos-btn active" data-pos="top-right" style="padding:8px;border-radius:8px;border:1px solid var(--accent);background:rgba(196,163,90,0.15);color:var(--accent);font-family:inherit;font-size:11px;cursor:pointer;text-align:center">↗ Top Right</button>
+              <button class="badge-pos-btn" data-pos="top-left" style="padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:11px;cursor:pointer;text-align:center">↖ Top Left</button>
+              <button class="badge-pos-btn" data-pos="bottom-right" style="padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:11px;cursor:pointer;text-align:center">↘ Bottom Right</button>
+              <button class="badge-pos-btn" data-pos="bottom-left" style="padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:11px;cursor:pointer;text-align:center">↙ Bottom Left</button>
+            </div>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text2);letter-spacing:.4px">
+            SIZE <span id="badge-size-val" style="color:var(--accent)">Medium</span>
+            <input type="range" id="badge-size-slider" min="0" max="2" value="1" step="1" style="width:100%;accent-color:var(--accent)">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text2);letter-spacing:.4px">
+            MARGIN <span id="badge-margin-val" style="color:var(--accent)">2px</span>
+            <input type="range" id="badge-margin-slider" min="0" max="8" value="2" step="1" style="width:100%;accent-color:var(--accent)">
+          </label>
+        </div>
       </div>
 
 
