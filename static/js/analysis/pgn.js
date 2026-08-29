@@ -584,6 +584,8 @@
     _applyAnalysisClockForIdx(currentMoveIdx);
     // Detect opening for current PGN position
     detectAnalysisOpening();
+    // Show board badge if review data already available
+    setTimeout(() => _showBoardBadge(currentMoveIdx), 200);
   }
 
   function exportPGN() {
@@ -890,6 +892,73 @@
   // Debounce timer for analyzePosition during rapid navigation
   let _analyzeDebounceTimer = null;
 
+  // ── Board move-classification badge (chess.com style) ──────────────
+  const BADGE_CLASS_MAP = {
+    'Brilliant':  'badge-brilliant',
+    'Great Move': 'badge-great',
+    'Best':       'badge-best',
+    'Excellent':  'badge-excellent',
+    'Good':       'badge-good',
+    'Inaccuracy': 'badge-inaccuracy',
+    'Mistake':    'badge-mistake',
+    'Blunder':    'badge-blunder',
+    'Mate Blunder': 'badge-blunder',
+    'Queen Donation': 'badge-special',
+    'Free Gift':  'badge-special',
+  };
+
+  function _showBoardBadge(idx) {
+    const badge = document.getElementById('board-badge');
+    if (!badge) return;
+    // Only show badge on analysis/pgn tab
+    if (_currentTab !== 'analysis' && _currentTab !== 'pgn') { badge.style.display = 'none'; return; }
+    const mv = (_analysisReviewMoves && idx >= 0 && idx < _analysisReviewMoves.length)
+      ? _analysisReviewMoves[idx] : null;
+    if (!mv || !mv.played_san) { badge.style.display = 'none'; return; }
+
+    const cls = mv.classification || 'Unknown';
+    const sym = QUALITY_SYMBOLS[cls] || '';
+    if (!sym) { badge.style.display = 'none'; return; }
+
+    // Get the destination square of the current move
+    const allHistory = moveHistory.slice();
+    if (idx < 0 || idx >= allHistory.length) { badge.style.display = 'none'; return; }
+    const moveObj = allHistory[idx];
+    if (!moveObj) { badge.style.display = 'none'; return; }
+    const toSq = moveObj.to;
+
+    // Get square coordinates from chessboard.js
+    try {
+      const sqCoords = board.squareCoordinates(toSq);
+      if (!sqCoords || sqCoords.x === undefined) { badge.style.display = 'none'; return; }
+
+      // Get square size from the board element
+      const boardEl = document.getElementById('board');
+      if (!boardEl) { badge.style.display = 'none'; return; }
+      const boardRect = boardEl.getBoundingClientRect();
+      const sqSize = boardRect.width / 8;
+
+      // Place badge content first so offsetWidth is available
+      badge.textContent = sym;
+      badge.className = BADGE_CLASS_MAP[cls] || 'badge-good';
+      badge.style.display = 'block';
+      badge.style.left = '0px';
+      badge.style.top = (sqCoords.y + 2) + 'px';
+      // Use requestAnimationFrame to position after browser calculates width
+      requestAnimationFrame(() => {
+        const badgeW = badge.offsetWidth || 22;
+        badge.style.left = (sqCoords.x + sqSize - badgeW - 2) + 'px';
+      });
+    } catch(e) {
+      badge.style.display = 'none';
+    }
+  }
+
+  function _hideBoardBadge() {
+    const badge = document.getElementById('board-badge');
+    if (badge) badge.style.display = 'none';
+  }
+
   function goToMove(idx) {
     // Use moveHistory (full game) — do NOT call game.history() after reset
     const allHistory = moveHistory.slice();   // save before any mutation
@@ -930,6 +999,8 @@
     }
     // Update opening detection as user navigates
     _debounceAnalysisOpening();
+    // Show move classification badge on board (chess.com style)
+    setTimeout(() => _showBoardBadge(idx), 100);
   }
 
   function updatePGNMovesHighlight(idx) {
@@ -989,11 +1060,13 @@
     _updateAnalysisCaptured(game);
     if (analysisPlayerInfo) {
       _applyAnalysisClockForIdx(-1);
-    }
-    // Hide opening box at start position
+    }    // Hide opening box at start position
     const oBox = document.getElementById('analysis-opening-box');
     if (oBox) oBox.style.display = 'none';
+    // Hide board badge at start position
+    _hideBoardBadge();
   }
+
 
   function goToEnd() {
     if (moveHistory.length > 0) goToMove(moveHistory.length - 1);
