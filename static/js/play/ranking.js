@@ -9,7 +9,6 @@
 
   const FLASK_URL = 'http://localhost:5050';
 
-  const TYPE_ICONS = { player: '👤', bot: '🤖' };
   const RESULT_COLORS = {
     win: 'var(--accent2)',
     loss: 'var(--danger)',
@@ -52,14 +51,13 @@
         row.onmouseleave = () => row.style.background = '';
         row.onclick = () => showPlayerDetail(entry.key);
 
-        const icon = TYPE_ICONS[entry.type] || '🤖';
         const pts = entry.points;
         const ptsColor = pts > 0 ? 'var(--accent2)' : pts < 0 ? 'var(--danger)' : 'var(--text2)';
         const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '';
 
         row.innerHTML = `
           <div style="font-weight:600;color:var(--text2)">${medal || (idx + 1)}</div>
-          <div style="color:var(--text);font-weight:500">${icon} ${_esc(entry.name)}</div>
+          <div style="color:var(--text);font-weight:500">${_esc(entry.name)}</div>
           <div style="text-align:right;color:var(--text2)">${entry.elo}</div>
           <div style="text-align:right;font-weight:700;color:${ptsColor}">${pts >= 0 ? '+' : ''}${pts}</div>
         `;
@@ -88,9 +86,8 @@
       const res = await fetch(`${FLASK_URL}/play/leaderboard/history/${encodeURIComponent(key)}`);
       const data = await res.json();
 
-      const icon = TYPE_ICONS[data.type] || '🤖';
       const ptsColor = data.points > 0 ? 'var(--accent2)' : data.points < 0 ? 'var(--danger)' : 'var(--text2)';
-      titleEl.textContent = `${icon} ${data.name}`;
+      titleEl.textContent = `${data.name}`;
       statsEl.innerHTML = `
         <span style="margin-right:12px">ELO: <b>${data.elo}</b></span>
         <span>Points: <b style="color:${ptsColor}">${data.points >= 0 ? '+' : ''}${data.points}</b></span>
