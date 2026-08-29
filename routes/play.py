@@ -28,6 +28,9 @@ DATA_DIR = os.path.join(BASE_DIR, "play_data")
 
 BOTS_FILE    = os.path.join(DATA_DIR, "bots.json")
 GAME_FILE    = os.path.join(DATA_DIR, "current_game.json")
+GAME_FILE_PLAYBOT = os.path.join(DATA_DIR, "current_game_playbot.json")
+GAME_FILE_BVB     = os.path.join(DATA_DIR, "current_game_bvb.json")
+GAME_FILE_TOURN   = os.path.join(DATA_DIR, "current_game_tournament.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "game_history.json")
 PLAYER_FILE  = os.path.join(DATA_DIR, "player.json")
 
@@ -47,18 +50,27 @@ def save_bots(bots):
     save_json_file(BOTS_FILE, bots)
 
 
-def load_game():
-    data = load_json_file(GAME_FILE)
+def _game_file(mode=None):
+    """Return the appropriate file path for the given mode."""
+    if mode == 'playbot': return GAME_FILE_PLAYBOT
+    if mode == 'bvb':     return GAME_FILE_BVB
+    if mode == 'tournament': return GAME_FILE_TOURN
+    return GAME_FILE
+
+
+def load_game(mode=None):
+    data = load_json_file(_game_file(mode))
     return data if isinstance(data, dict) else None
 
 
-def save_game_state(state):
-    save_json_file(GAME_FILE, state)
+def save_game_state(state, mode=None):
+    save_json_file(_game_file(mode), state)
 
 
-def delete_game_state():
-    if os.path.exists(GAME_FILE):
-        os.remove(GAME_FILE)
+def delete_game_state(mode=None):
+    f = _game_file(mode)
+    if os.path.exists(f):
+        os.remove(f)
 
 
 def load_history():
@@ -184,7 +196,8 @@ def remove_personality(bot_id):
 
 @play_bp.route("/play/game", methods=["GET"])
 def get_game():
-    state = load_game()
+    mode = request.args.get("mode")
+    state = load_game(mode)
     return jsonify({"game": state})
 
 
@@ -194,13 +207,15 @@ def save_game():
     if not state:
         return jsonify({"error": "No state provided"}), 400
     state["saved_at"] = int(time.time())
-    save_game_state(state)
+    mode = state.pop("resume_mode", None) or request.args.get("mode")
+    save_game_state(state, mode)
     return jsonify({"ok": True})
 
 
 @play_bp.route("/play/game", methods=["DELETE"])
 def clear_game():
-    delete_game_state()
+    mode = request.args.get("mode")
+    delete_game_state(mode)
     return jsonify({"ok": True})
 
 

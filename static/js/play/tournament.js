@@ -619,8 +619,12 @@ function _recordWinner(roundIdx, matchIdx, side) {
     }
   }
 
-  // Track user elimination
-  if (side && !_isUserIn(T)) T.userEliminated = true;
+  // Track user elimination — only when user ACTUALLY lost their own match
+  const wasUserMatch = (m.p1.type === 'user' || m.p2.type === 'user');
+  if (wasUserMatch) {
+    const userSideKey = m.p1.type === 'user' ? 'p1' : 'p2';
+    if (side !== userSideKey) T.userEliminated = true;
+  }
 }
 
 // ── Archive completed tournament → history ────────────────────
@@ -983,7 +987,7 @@ async function tourOnUserGameOver(title) {
   if (T) delete T.live;
 
   // Tournament games ko normal resume system mein mat daalo
-  fetch(`${FLASK_URL}/play/game`, { method: 'DELETE' }).catch(() => {});
+  fetch(`${FLASK_URL}/play/game?mode=tournament`, { method: 'DELETE' }).catch(() => {});
 
   const m = T.rounds[ctx.roundIdx][ctx.matchIdx];
   const playerColorWord = playState.playerColor === 'w' ? 'white' : 'black';

@@ -170,8 +170,14 @@ function showIngameUI() {
 
 // ── Auto-save play state ──────────────────────────────────────
 
-async function autoSavePlayState() {
+async function autoSavePlayState(mode) {
   if (playState.status === 'setup') return;
+  // Auto-detect mode if not provided
+  if (!mode) {
+    if (window.TOURNAMENT_CTX) mode = 'tournament';
+    else if (window.DUO_CTX) mode = 'bvb';
+    else mode = 'playbot';
+  }
   const hist = playGame.history({ verbose: true });
   const payload = {
     botId:         playState.botId,
@@ -190,6 +196,7 @@ async function autoSavePlayState() {
     result:        playState.result,
     moveLog:       playState.moveLog       || [],
     openingLocked: playState.openingLocked !== undefined ? playState.openingLocked : null,
+    resume_mode:   mode || undefined,
   };
   try {
     await fetch(`${FLASK_URL}/play/game`, {
@@ -204,7 +211,7 @@ async function autoSavePlayState() {
 
 async function checkResumeGame() {
   try {
-    const res  = await fetch(`${FLASK_URL}/play/game`);
+    const res  = await fetch(`${FLASK_URL}/play/game?mode=playbot`);
     const data = await res.json();
     if (!data.game || data.game.status === 'over') return;
 
@@ -246,7 +253,7 @@ async function resumeSavedGame() {
     openingLocked:  g.openingLocked !== undefined ? g.openingLocked : null,
   };
 
-  playGame = new Chess();
+  playGame = new Chess(g.startFen || undefined);
   (g.moves || []).forEach(uci => {
     const from = uci.slice(0,2), to = uci.slice(2,4), promo = uci[4];
     playGame.move({ from, to, promotion: promo });
@@ -284,6 +291,6 @@ async function resumeSavedGame() {
 async function discardSavedGame() {
   document.getElementById('resume-banner').classList.remove('show');
   try {
-    await fetch(`${FLASK_URL}/play/game`, { method: 'DELETE' });
+    await fetch(`${FLASK_URL}/play/game?mode=playbot`, { method: 'DELETE' });
   } catch(e) { /* ignore */ }
 }
