@@ -116,7 +116,7 @@
 #board-badge {
   position: absolute;
   z-index: 20;
-  pointer-events: none;
+  pointer-events: auto;
   display: none;
   min-width: 22px;
   height: 22px;
@@ -141,3 +141,22 @@
 #board-badge.badge-mistake    { background: #e53935; }
 #board-badge.badge-blunder    { background: #b71c1c; }
 #board-badge.badge-special    { background: #7b1fa2; }
+
+/* Explanation panel (toggle on badge click) */
+#board-badge-panel {
+  position: absolute;
+  z-index: 21;
+  display: none;
+  background: rgba(20, 20, 30, 0.95);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  max-width: min(220px, 50vw);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  pointer-events: auto;
+  animation: badgePanelIn 0.15s ease;
+}
+@keyframes badgePanelIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

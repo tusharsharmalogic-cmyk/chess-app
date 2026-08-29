@@ -793,12 +793,72 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
     try { localStorage.setItem('boardBadgeSettings', JSON.stringify(s)); } catch(e) {}
   }
 
-  function showBoardBadge(toSquare, classification) {
+  // Store current badge move data for explanation panel
+  let _badgeMoveData = null;
+
+  function _genExplanation(cls, bestSan, playedSan, dif) {
+    const parts = [];
+    if (bestSan && bestSan !== playedSan) {
+      parts.push('Better: <b>' + bestSan + '</b>');
+    }
+    if (dif > 0) {
+      parts.push('Lost <b>' + dif + ' cp</b>');
+    }
+    switch(cls) {
+      case 'Blunder':
+        parts.push('A very bad move that changes the game outcome significantly.'); break;
+      case 'Mistake':
+        parts.push('An inaccurate move that worsens the position.'); break;
+      case 'Inaccuracy':
+        parts.push('A slightly inaccurate move, a better option was available.'); break;
+      case 'Best':
+        parts.push('The best move in this position.'); break;
+      case 'Excellent':
+        parts.push('A very strong move, nearly as good as the best.'); break;
+      case 'Good':
+        parts.push('A solid move maintaining the position.'); break;
+      case 'Brilliant':
+        parts.push('A brilliant sacrifice or deep tactical shot!'); break;
+      case 'Great Move':
+        parts.push('A great move, finding a strong resource.'); break;
+    }
+    return parts.join(' · ');
+  }
+
+  function _showExplanationPanel(badge) {
+    let panel = document.getElementById('board-badge-panel');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'board-badge-panel';
+      badge.parentNode.appendChild(panel);
+    }
+    const md = _badgeMoveData;
+    if (!md) { panel.style.display = 'none'; return; }
+    const cls = md.classification || 'Unknown';
+    const col = QUALITY_COLORS[cls] || '#aaa';
+    const sym = QUALITY_SYMBOLS[cls] || '';
+    const text = _genExplanation(cls, md.best_san, md.played_san, md.dif);
+    panel.innerHTML = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="color:' + col + ';font-weight:700;font-size:13px">' + sym + ' ' + cls + '</span></div>' +
+      '<div style="font-size:11px;color:var(--text2);line-height:1.5">' + text + '</div>';
+    panel.style.display = 'block';
+  }
+
+  function _hideExplanationPanel() {
+    const panel = document.getElementById('board-badge-panel');
+    if (panel) panel.style.display = 'none';
+  }
+
+  function showBoardBadge(toSquare, classification, moveData) {
     const badge = document.getElementById('board-badge');
     if (!badge) return;
-    if (!toSquare || !classification) { badge.style.display = 'none'; return; }
+    if (!toSquare || !classification) { badge.style.display = 'none'; _hideExplanationPanel(); return; }
     const sym = QUALITY_SYMBOLS[classification] || '';
-    if (!sym) { badge.style.display = 'none'; return; }
+    if (!sym) { badge.style.display = 'none'; _hideExplanationPanel(); return; }
+
+    // Store move data for explanation
+    _badgeMoveData = moveData || null;
+    _hideExplanationPanel();
+
     try {
       const sqEl = document.querySelector('#board .square-' + toSquare);
       if (!sqEl) { badge.style.display = 'none'; return; }
@@ -828,9 +888,9 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
       badge.style.paddingLeft = sz.padH + 'px';
       badge.style.paddingRight = sz.padH + 'px';
       badge.style.minWidth = '0';
+      badge.style.cursor = moveData ? 'pointer' : 'default';
 
       // Calculate position based on user setting
-      // First render to measure badge width
       badge.style.left = '-999px';
       badge.style.top = '0px';
       badge.style.right = 'auto';
@@ -871,6 +931,39 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
   function hideBoardBadge() {
     const badge = document.getElementById('board-badge');
     if (badge) badge.style.display = 'none';
+    _hideExplanationPanel();
   }
+
+  // Badge click handler — toggle explanation panel
+  (function() {
+    function _onBadgeClick(e) {
+      e.stopPropagation();
+      const panel = document.getElementById('board-badge-panel');
+      if (panel && panel.style.display === 'block') {
+        _hideExplanationPanel();
+      } else {
+        _showExplanationPanel(e.currentTarget);
+      }
+    }
+    // Attach to badge once DOM ready
+    function _attach() {
+      const badge = document.getElementById('board-badge');
+      if (badge && !badge._badgeClickAttached) {
+        badge.addEventListener('click', _onBadgeClick);
+        badge._badgeClickAttached = true;
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', _attach);
+    } else {
+      setTimeout(_attach, 200);
+    }
+    // Also hide panel when clicking elsewhere on the board
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#board-badge') && !e.target.closest('#board-badge-panel')) {
+        _hideExplanationPanel();
+      }
+    });
+  })();
 
   // Analysis
