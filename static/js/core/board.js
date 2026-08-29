@@ -778,6 +778,7 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
 
   // ── Badge settings (persisted to localStorage) ──────────────────
   const BADGE_SIZE_MAP = [
+    { fontSize: 8, height: 14, padH: 2 },   // Extra Small
     { fontSize: 10, height: 18, padH: 3 },  // Small
     { fontSize: 12, height: 22, padH: 4 },  // Medium
     { fontSize: 15, height: 26, padH: 5 },  // Large
@@ -813,7 +814,7 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
       // Read user settings
       const cfg = _loadBadgeSettings();
       const pos = cfg.position || 'top-right';
-      const sizeIdx = cfg.size != null ? cfg.size : 1;
+      const sizeIdx = cfg.size != null ? cfg.size : 2;
       const margin = cfg.margin != null ? cfg.margin : 2;
       const sz = BADGE_SIZE_MAP[sizeIdx] || BADGE_SIZE_MAP[1];
 

@@ -260,6 +260,8 @@
     _currentTab = name;
     // Puzzle HUD pause/show handle karo jab bhi tab switch ho
     if (typeof pzOnTabSwitch === 'function') pzOnTabSwitch(name);
+    // Hide board badge when switching away from PGN/Review tab
+    if (name !== 'pgn' && name !== 'review' && typeof hideBoardBadge === 'function') hideBoardBadge();
     // Update move card visibility when switching tabs
     _renderMoveCards();
   }

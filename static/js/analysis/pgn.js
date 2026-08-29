@@ -894,7 +894,7 @@
 
   // Board badge helper — uses global showBoardBadge / hideBoardBadge
   function _showBoardBadgeForIdx(idx) {
-    if (_currentTab !== 'analysis' && _currentTab !== 'pgn') { hideBoardBadge(); return; }
+    if (_currentTab !== 'pgn') { hideBoardBadge(); return; }
     const mv = (_analysisReviewMoves && idx >= 0 && idx < _analysisReviewMoves.length)
       ? _analysisReviewMoves[idx] : null;
     if (!mv || !mv.played_san) { hideBoardBadge(); return; }

@@ -241,7 +241,7 @@
 // ── Badge Settings UI (position, size, margin) ────────────────────
 (function() {
   'use strict';
-  const SIZE_LABELS = ['Small', 'Medium', 'Large'];
+  const SIZE_LABELS = ['Extra Small', 'Small', 'Medium', 'Large'];
 
   function _loadBadgeCfg() {
     try { return JSON.parse(localStorage.getItem('boardBadgeSettings')) || {}; } catch(e) { return {}; }
@@ -253,7 +253,7 @@
   function _initBadgeSettings() {
     const cfg = _loadBadgeCfg();
     const pos = cfg.position || 'top-right';
-    const sizeIdx = cfg.size != null ? cfg.size : 1;
+    const sizeIdx = cfg.size != null ? cfg.size : 2;
     const margin = cfg.margin != null ? cfg.margin : 2;
 
     // Highlight active position button
