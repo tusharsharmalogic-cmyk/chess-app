@@ -837,10 +837,36 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
     const cls = md.classification || 'Unknown';
     const col = QUALITY_COLORS[cls] || '#aaa';
     const sym = QUALITY_SYMBOLS[cls] || '';
-    const text = _genExplanation(cls, md.best_san, md.played_san, md.dif);
-    panel.innerHTML = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="color:' + col + ';font-weight:700;font-size:13px">' + sym + ' ' + cls + '</span></div>' +
-      '<div style="font-size:11px;color:var(--text2);line-height:1.5">' + text + '</div>';
+    const bestLine = md.best_line || [];
+
+    let html = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="color:' + col + ';font-weight:700;font-size:13px">' + sym + ' ' + cls + '</span>';
+    if (md.dif > 0) html += '<span style="font-size:10px;color:var(--text3)">-' + md.dif + ' cp</span>';
+    html += '</div>';
+
+    if (bestLine.length > 0) {
+      html += '<div style="font-size:10px;color:var(--text3);margin-bottom:4px">Better line (tap to preview):</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:3px">';
+      bestLine.forEach(function(mv, i) {
+        html += '<span class="badge-pv-move" data-fen="' + mv.fen + '" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 5px;font-size:11px;color:var(--text);cursor:pointer;font-family:\'JetBrains Mono\',monospace;transition:background .1s" onmouseenter="this.style.background=\'rgba(255,255,255,0.18)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.08)\'">' + mv.san + '</span>';
+      });
+      html += '</div>';
+    } else if (md.best_san && md.best_san !== md.played_san) {
+      html += '<div style="font-size:11px;color:var(--text2)">Better: <b style="color:var(--accent2)">' + md.best_san + '</b></div>';
+    }
+
+    panel.innerHTML = html;
     panel.style.display = 'block';
+
+    // Attach click handlers to PV moves
+    panel.querySelectorAll('.badge-pv-move').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const fen = this.dataset.fen;
+        if (fen && typeof board !== 'undefined') {
+          board.position(fen, true);
+        }
+      });
+    });
   }
 
   function _hideExplanationPanel() {

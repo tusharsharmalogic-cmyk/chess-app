@@ -556,7 +556,8 @@
         const toSq = mv.played_uci.slice(2, 4);
         showBoardBadge(toSq, mv.classification, {
           best_san: mv.best_san, played_san: mv.played_san,
-          dif: (mv.cp_best != null && mv.cp_played != null) ? Math.abs(mv.cp_best - mv.cp_played) : 0
+          dif: (mv.cp_best != null && mv.cp_played != null) ? Math.abs(mv.cp_best - mv.cp_played) : 0,
+          best_line: mv.best_line
         });
       }
     }, 120);

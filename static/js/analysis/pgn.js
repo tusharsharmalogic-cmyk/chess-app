@@ -903,7 +903,8 @@
     const moveObj = allHistory[idx];
     if (!moveObj) { hideBoardBadge(); return; }
     showBoardBadge(moveObj.to, mv.classification, {
-      best_san: mv.best_san, played_san: mv.played_san, dif: mv.dif
+      best_san: mv.best_san, played_san: mv.played_san, dif: mv.dif,
+      best_line: mv.best_line
     });
   }
 

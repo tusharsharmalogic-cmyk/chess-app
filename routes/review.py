@@ -206,6 +206,19 @@ def review_analyze():
                 except Exception:
                     best_san = str(best_move_obj) if best_move_obj else "?"
 
+                # Extract best line PV (up to 6 moves)
+                pv_moves = pre_list[0].get("pv", [])[:6]
+                best_line = []
+                pv_board = board.copy()
+                for pv_move in pv_moves:
+                    try:
+                        pv_san = pv_board.san(pv_move)
+                        pv_fen = pv_board.fen()
+                        pv_board.push(pv_move)
+                        best_line.append({"san": pv_san, "fen": pv_fen})
+                    except Exception:
+                        break
+
                 try:
                     played_san = board.san(move)
                 except Exception:
@@ -239,6 +252,7 @@ def review_analyze():
                     "accuracy":       round(accuracy, 1),
                     "fen_before":     fen_before,
                     "fen_after":      fen_after,
+                    "best_line":      best_line,
                 })
 
             except Exception as e:
