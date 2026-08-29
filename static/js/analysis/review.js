@@ -82,6 +82,15 @@
   // saved by the Play tab — used as a fallback when the PGN text itself
   // doesn't carry proper header tags or [%clk] comments.
   function openInReview(pgn, historyGame) {
+    // Pehle purana review state reset karo — agar koi purana game
+    // analysis/summary loaded hai toh wo naye game ki galat info overwrite na kare
+    rvState.moves = [];
+    rvState.summary = null;
+    rvState.currentIdx = -1;
+    const cr = document.getElementById('rv-classification-row');
+    if (cr) cr.style.display = 'none';
+    rvShowPhase('setup');
+
     switchTab('review');
 
     // If historyGame has explicit names, inject them as PGN headers so

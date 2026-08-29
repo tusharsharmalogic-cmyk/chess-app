@@ -753,6 +753,11 @@ function tourReturnToBracket() {
   });
   hideAllDialogueBubbles();
   hideBvbTurnDots();
+  // Restore eval container — tournament match me hide karne ke baad
+  // wapas show karna zaroori hai taaki Analysis/PGN/Review tabs mein
+  // eval bar gayab na rahe
+  const _ec = document.querySelector('.eval-container');
+  if (_ec) _ec.style.display = '';
   playSubSwitch('tournaments');
   updatePlayBoardVisibility?.();
 }
