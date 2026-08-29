@@ -761,4 +761,54 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
     if (toEl) { toEl.classList.add('highlight-white'); highlightedSquares.push(to); }
   }
 
+  // ── Board move-classification badge (chess.com style) ──────────────
+  const BADGE_CLASS_MAP = {
+    'Brilliant':  'badge-brilliant',
+    'Great Move': 'badge-great',
+    'Best':       'badge-best',
+    'Excellent':  'badge-excellent',
+    'Good':       'badge-good',
+    'Inaccuracy': 'badge-inaccuracy',
+    'Mistake':    'badge-mistake',
+    'Blunder':    'badge-blunder',
+    'Mate Blunder': 'badge-blunder',
+    'Queen Donation': 'badge-special',
+    'Free Gift':  'badge-special',
+  };
+
+  function showBoardBadge(toSquare, classification) {
+    const badge = document.getElementById('board-badge');
+    if (!badge) return;
+    if (!toSquare || !classification) { badge.style.display = 'none'; return; }
+    const sym = QUALITY_SYMBOLS[classification] || '';
+    if (!sym) { badge.style.display = 'none'; return; }
+    try {
+      const sqEl = document.querySelector('#board .square-' + toSquare);
+      if (!sqEl) { badge.style.display = 'none'; return; }
+      const boardEl = document.getElementById('board');
+      if (!boardEl) { badge.style.display = 'none'; return; }
+      const boardRect = boardEl.getBoundingClientRect();
+      const sqRect = sqEl.getBoundingClientRect();
+      const relX = sqRect.left - boardRect.left;
+      const relY = sqRect.top - boardRect.top;
+      const sqW = sqRect.width;
+      badge.textContent = sym;
+      badge.className = BADGE_CLASS_MAP[classification] || 'badge-good';
+      badge.style.display = 'block';
+      badge.style.left = '0px';
+      badge.style.top = relY + 'px';
+      requestAnimationFrame(() => {
+        const badgeW = badge.offsetWidth || 22;
+        badge.style.left = (relX + sqW - badgeW - 2) + 'px';
+      });
+    } catch(e) {
+      badge.style.display = 'none';
+    }
+  }
+
+  function hideBoardBadge() {
+    const badge = document.getElementById('board-badge');
+    if (badge) badge.style.display = 'none';
+  }
+
   // Analysis

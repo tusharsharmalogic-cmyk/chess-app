@@ -379,6 +379,7 @@
     const fenMatch = (rvState.pgn || '').match(/\[FEN "([^"]+)"\]/);
     const startPos = fenMatch ? fenMatch[1] : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     try { board.position(startPos, false); } catch(e) {}
+    hideBoardBadge();
     resetEval();
     _applyReviewClockForIdx(-1);
     rvShowCurrentMove(true);
@@ -549,6 +550,14 @@
       board.position(mv.fen_after, !skipAnimation);
     } catch(e) {}
 
+    // Board badge — show on destination square (chess.com style)
+    setTimeout(() => {
+      if (mv.played_uci && mv.played_uci.length >= 4) {
+        const toSq = mv.played_uci.slice(2, 4);
+        showBoardBadge(toSq, mv.classification);
+      }
+    }, 120);
+
     // ── Row 6: Classification badge (board-area) ──
     const badge = document.getElementById('rv-classification-badge');
     const classRow = document.getElementById('rv-classification-row');
@@ -630,6 +639,7 @@
     // Hide opening box when going back to summary
     const ob = document.getElementById('rv-opening-box');
     if (ob) ob.style.display = 'none';
+    hideBoardBadge();
     rvShowSummary();
   }
 
