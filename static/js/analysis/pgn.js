@@ -513,6 +513,7 @@
   }
 
   function loadPGN() {
+    _hidePgnExplanation();
     _analysisReviewMoves = null;   // fresh load — no review classification
     const pgn = document.getElementById('pgn-input').value.trim();
     if (!pgn) return;
@@ -700,7 +701,7 @@
           }
         }
       }
-      btn.onclick = () => { switchToVariation(node.id); goToMove(i); };
+      btn.onclick = () => { switchToVariation(node.id); goToMove(i); _showPgnExplanation(i); };
       container.appendChild(btn);
 
       // After this move, check if any child nodes branch HERE (branchMoveIdx === i+1)
@@ -777,7 +778,7 @@
         btn.className = 'pgn-token move' + (i === currentMoveIdx ? ' current' : '');
         btn.textContent = move.san;
         _annotateToken(btn, i);
-        btn.onclick = () => goToMove(i);
+        btn.onclick = () => { goToMove(i); _showPgnExplanation(i); };
         container.appendChild(btn);
       });
       _renderMoveCards();
@@ -908,6 +909,28 @@
     });
   }
 
+  // PGN tab explanation panel — show when move token is clicked
+  function _showPgnExplanation(idx) {
+    const panel = document.getElementById('pgn-explanation-panel');
+    if (!panel) return;
+    const mv = (_analysisReviewMoves && idx >= 0 && idx < _analysisReviewMoves.length)
+      ? _analysisReviewMoves[idx] : null;
+    if (!mv || !mv.played_san) { panel.style.display = 'none'; return; }
+    if (typeof showMoveExplanation === 'function') {
+      showMoveExplanation(panel, {
+        classification: mv.classification,
+        best_san: mv.best_san,
+        played_san: mv.played_san,
+        dif: mv.dif,
+        best_line: mv.best_line
+      });
+    }
+  }
+  function _hidePgnExplanation() {
+    const panel = document.getElementById('pgn-explanation-panel');
+    if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+  }
+
   function goToMove(idx) {
     // Use moveHistory (full game) — do NOT call game.history() after reset
     const allHistory = moveHistory.slice();   // save before any mutation
@@ -1014,6 +1037,7 @@
     if (oBox) oBox.style.display = 'none';
     // Hide board badge at start position
     hideBoardBadge();
+    _hidePgnExplanation();
   }
 
 

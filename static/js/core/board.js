@@ -914,7 +914,7 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
       badge.style.paddingLeft = sz.padH + 'px';
       badge.style.paddingRight = sz.padH + 'px';
       badge.style.minWidth = '0';
-      badge.style.cursor = moveData ? 'pointer' : 'default';
+      badge.style.cursor = 'default';
 
       // Calculate position based on user setting
       badge.style.left = '-999px';
@@ -960,36 +960,44 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
     _hideExplanationPanel();
   }
 
-  // Badge click handler — toggle explanation panel
-  (function() {
-    function _onBadgeClick(e) {
-      e.stopPropagation();
-      const panel = document.getElementById('board-badge-panel');
-      if (panel && panel.style.display === 'block') {
-        _hideExplanationPanel();
-      } else {
-        _showExplanationPanel(e.currentTarget);
-      }
+  // Badge is display-only — no click handler. Explanation shown on PGN move tokens.
+
+  // Global: show move explanation in a given container element
+  function showMoveExplanation(container, moveData) {
+    if (!container || !moveData) { if (container) container.style.display = 'none'; return; }
+    const cls = moveData.classification || 'Unknown';
+    const col = QUALITY_COLORS[cls] || '#aaa';
+    const sym = QUALITY_SYMBOLS[cls] || '';
+    const bestLine = moveData.best_line || [];
+
+    let html = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="color:' + col + ';font-weight:700;font-size:13px">' + sym + ' ' + cls + '</span>';
+    if (moveData.dif > 0) html += '<span style="font-size:10px;color:var(--text3)">-' + moveData.dif + ' cp</span>';
+    html += '</div>';
+
+    if (bestLine.length > 0) {
+      html += '<div style="font-size:10px;color:var(--text3);margin-bottom:4px">Better line (tap to preview):</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:3px">';
+      bestLine.forEach(function(mv) {
+        html += '<span class="pv-move-token" data-fen="' + mv.fen + '" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 5px;font-size:11px;color:var(--text);cursor:pointer;font-family:\'JetBrains Mono\',monospace;transition:background .1s" onmouseenter="this.style.background=\'rgba(255,255,255,0.18)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.08)\'">' + mv.san + '</span>';
+      });
+      html += '</div>';
+    } else if (moveData.best_san && moveData.best_san !== moveData.played_san) {
+      html += '<div style="font-size:11px;color:var(--text2)">Better: <b style="color:var(--accent2)">' + moveData.best_san + '</b></div>';
     }
-    // Attach to badge once DOM ready
-    function _attach() {
-      const badge = document.getElementById('board-badge');
-      if (badge && !badge._badgeClickAttached) {
-        badge.addEventListener('click', _onBadgeClick);
-        badge._badgeClickAttached = true;
-      }
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', _attach);
-    } else {
-      setTimeout(_attach, 200);
-    }
-    // Also hide panel when clicking elsewhere on the board
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('#board-badge') && !e.target.closest('#board-badge-panel')) {
-        _hideExplanationPanel();
-      }
+
+    container.innerHTML = html;
+    container.style.display = 'block';
+
+    // Attach click handlers to PV moves — board position update
+    container.querySelectorAll('.pv-move-token').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const fen = this.dataset.fen;
+        if (fen && typeof board !== 'undefined') {
+          board.position(fen, true);
+        }
+      });
     });
-  })();
+  }
 
   // Analysis

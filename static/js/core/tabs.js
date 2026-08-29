@@ -94,6 +94,8 @@
     const ANALYSIS_TABS = ['analysis', 'pgn', 'fen'];
     if (ANALYSIS_TABS.includes(_currentTab) && !ANALYSIS_TABS.includes(name)) {
       _saveAnalysisSnapshot();
+      // Hide PGN explanation panel when leaving PGN tab
+      if (_currentTab === 'pgn' && typeof _hidePgnExplanation === 'function') _hidePgnExplanation();
     }
 
     const names = ['analysis', 'pgn', 'fen', 'play', 'review', 'settings'];
