@@ -408,6 +408,12 @@ function onSnapEnd() { }
     // Redraw arrows with corrected orientation
     setTimeout(redrawArrows, 110);
 
+    // Reposition board badge after flip
+    if (_lastBadgeState) {
+      const bs = _lastBadgeState;
+      setTimeout(() => showBoardBadge(bs.toSquare, bs.classification, bs.moveData), 150);
+    }
+
     // Re-render player rows using the updated boardFlipped flag.
     // All update functions (_updateAnalysisCaptured, _applyAnalysisClockForIdx,
     // _applyReviewClockForIdx, rvSetupPlayerRows, _restoreAnalysisPlayerRows)
@@ -804,6 +810,8 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
 
   // Store current badge move data for explanation panel
   let _badgeMoveData = null;
+  // Store badge position state for repositioning on flip
+  let _lastBadgeState = null;  // { toSquare, classification, moveData }
 
   function _genExplanation(cls, bestSan, playedSan, dif) {
     const parts = [];
@@ -890,8 +898,9 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
     const sym = QUALITY_SYMBOLS[classification] || '';
     if (!sym) { badge.style.display = 'none'; _hideExplanationPanel(); return; }
 
-    // Store move data for explanation
+    // Store move data for explanation + state for flip repositioning
     _badgeMoveData = moveData || null;
+    _lastBadgeState = { toSquare, classification, moveData };
     _hideExplanationPanel();
 
     try {
@@ -966,6 +975,7 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
   function hideBoardBadge() {
     const badge = document.getElementById('board-badge');
     if (badge) badge.style.display = 'none';
+    _lastBadgeState = null;
     _hideExplanationPanel();
   }
 
