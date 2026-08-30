@@ -814,6 +814,23 @@ def classify():
 @play_bp.route("/play/leaderboard", methods=["GET"])
 def get_leaderboard():
     lb = load_leaderboard()
+
+    # Migration: merge old 'user:user' duplicate into 'player:user'
+    old_user_key = "user:user"
+    correct_user_key = "player:user"
+    if old_user_key in lb:
+        old_entry = lb.pop(old_user_key)
+        if correct_user_key in lb:
+            target = lb[correct_user_key]
+            target['points'] += old_entry.get('points', 0)
+            old_hist = old_entry.get('history', [])
+            target['history'] = (old_hist + target.get('history', []))[:50]
+            if old_entry.get('elo', 0) > target.get('elo', 0):
+                target['elo'] = old_entry['elo']
+        else:
+            lb[correct_user_key] = old_entry
+        save_leaderboard(lb)
+
     # Sort by points descending, then by elo descending
     entries = []
     for key, entry in lb.items():
