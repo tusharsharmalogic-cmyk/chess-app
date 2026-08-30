@@ -701,7 +701,7 @@
           }
         }
       }
-      btn.onclick = () => { switchToVariation(node.id); goToMove(i); _showPgnExplanation(i); };
+      btn.onclick = () => { switchToVariation(node.id); goToMove(i); };
       container.appendChild(btn);
 
       // After this move, check if any child nodes branch HERE (branchMoveIdx === i+1)
@@ -778,7 +778,7 @@
         btn.className = 'pgn-token move' + (i === currentMoveIdx ? ' current' : '');
         btn.textContent = move.san;
         _annotateToken(btn, i);
-        btn.onclick = () => { goToMove(i); _showPgnExplanation(i); };
+        btn.onclick = () => { goToMove(i); };
         container.appendChild(btn);
       });
       _renderMoveCards();
@@ -842,6 +842,7 @@
       ? `<span style="font-size:10px;color:#4a9eff;margin-left:6px;font-weight:600">→ ${mv.best_san}</span>` : '';
 
     cardsEl.style.display = 'block';
+    cardsEl.style.cursor = 'pointer';
     cardsEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;background:${col}18;border-left:3px solid ${col};font-size:11px;">
         <span style="color:var(--text3);font-size:10px;min-width:28px">${moveNum}.${idx%2===0?'':'..'}</span>
@@ -851,6 +852,16 @@
         ${bestPart}
       </div>
     `;
+    // Click on classification card → toggle explanation panel
+    cardsEl.onclick = () => {
+      const panel = document.getElementById('pgn-explanation-panel');
+      if (!panel) return;
+      if (panel.style.display === 'block') {
+        _hidePgnExplanation();
+      } else {
+        _showPgnExplanation(idx);
+      }
+    };
 
     // Suggestion ON  → green arrow (analyzePosition draws it, blue nahi chahiye)
     // Suggestion OFF → blue arrow (best move dikhao)
