@@ -191,14 +191,15 @@
 
     <!-- PGN Tab -->
     <div class="tab-content" id="tab-pgn">
-      <div class="nav-row">
-        <button class="btn" onclick="goToStart()" title="Start">⏮</button>
-        <button class="btn" onclick="prevMove()" title="Previous">◀</button>
-        <button class="btn" onclick="nextMove()" title="Next">▶</button>
-        <button class="btn" onclick="goToEnd()" title="End">⏭</button>
+      <!-- New nav row: 💡 | card | < > | best-line | 🔗 -->
+      <div id="pgn-nav-row" style="display:flex;align-items:center;gap:4px;margin:0;padding:0 0 6px 0;flex-wrap:nowrap;overflow:hidden;">
+        <button id="pgn-suggestion-btn" onclick="toggleSuggestion()" title="Toggle suggestion arrow" style="flex:0 0 auto;min-width:0;padding:8px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--accent2);font-size:14px;cursor:pointer;line-height:1;">💡</button>
+        <div id="pgn-move-cards" style="display:none;flex:1;min-width:0;overflow:hidden;"></div>
+        <button class="btn" onclick="prevMove()" title="Previous" style="flex:0 0 auto;padding:8px 8px;font-size:14px;">◀</button>
+        <button class="btn" onclick="nextMove()" title="Next" style="flex:0 0 auto;padding:8px 8px;font-size:14px;">▶</button>
+        <div id="pgn-bestline-box" style="display:none;flex:0 1 120px;min-width:0;overflow:hidden;font-size:10px;color:var(--text3);padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;"></div>
+        <button id="pgn-mainline-btn" onclick="goToMainLine()" title="Go to main line" style="display:none;flex:0 0 auto;padding:8px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text2);font-size:13px;cursor:pointer;line-height:1;">🔗</button>
       </div>
-      <!-- Single current-move classification card (main line only, hidden when no review data) -->
-      <div id="pgn-move-cards" style="display:none;margin-top:6px;"></div>
       <div id="pgn-explanation-panel" style="display:none;margin-top:4px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;"></div>
       <div class="fen-label">Move History</div>
       <div class="pgn-moves" id="pgn-moves"></div>

@@ -801,15 +801,26 @@
     }
   }
 
-  // Render single current-move classification card (below nav buttons, PGN tab + main line only)
+  // Render single current-move classification card (PGN tab nav row)
   function _renderMoveCards() {
     const cardsEl = document.getElementById('pgn-move-cards');
+    const mainlineBtn = document.getElementById('pgn-mainline-btn');
+    const bestlineBox = document.getElementById('pgn-bestline-box');
+    const suggBtn = document.getElementById('pgn-suggestion-btn');
     if (!cardsEl) return;
 
-    // Hide and clear best-move arrow if conditions not met
+    // Update suggestion button state
+    if (suggBtn) {
+      suggBtn.style.color = window._suggestionOn ? 'var(--accent2)' : 'var(--text3)';
+      suggBtn.style.borderColor = window._suggestionOn ? 'var(--accent2)' : 'var(--border)';
+    }
+
+    // Show mainline button only when in a sub-variation
     const onPgnTab = _currentTab === 'pgn';
     const rootId = varTree.length > 0 ? varTree[0].id : 0;
     const onMainLine = (activeVarId === rootId);
+    if (mainlineBtn) mainlineBtn.style.display = (onPgnTab && !onMainLine) ? '' : 'none';
+
     const idx = currentMoveIdx;
     const mv = (_analysisReviewMoves && idx >= 0 && idx < _analysisReviewMoves.length)
       ? _analysisReviewMoves[idx] : null;
@@ -827,6 +838,7 @@
     if (!onPgnTab || !onMainLine || !mv || !mv.played_san) {
       cardsEl.style.display = 'none';
       cardsEl.innerHTML = '';
+      if (bestlineBox) { bestlineBox.style.display = 'none'; bestlineBox.textContent = ''; }
       _clearBestArrow();
       return;
     }
@@ -837,19 +849,14 @@
     const moveNum = Math.floor(idx / 2) + 1;
     const side = idx % 2 === 0 ? '♙' : '♟';
 
-    const hasBest = mv.best_san && mv.best_san !== mv.played_san;
-    const bestPart = hasBest
-      ? `<span style="font-size:10px;color:#4a9eff;margin-left:6px;font-weight:600">→ ${mv.best_san}</span>` : '';
-
-    cardsEl.style.display = 'block';
+    cardsEl.style.display = '';
     cardsEl.style.cursor = 'pointer';
     cardsEl.innerHTML = `
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;background:${col}18;border-left:3px solid ${col};font-size:11px;">
-        <span style="color:var(--text3);font-size:10px;min-width:28px">${moveNum}.${idx%2===0?'':'..'}</span>
-        <span style="color:var(--text);font-weight:600">${side} ${mv.played_san}</span>
-        <span style="color:${col};font-weight:700;font-size:13px">${sym}</span>
-        <span style="color:${col};font-size:10px;flex:1">${cls}</span>
-        ${bestPart}
+      <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;background:${col}18;border-left:3px solid ${col};font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;">
+        <span style="color:var(--text3);font-size:10px;flex-shrink:0">${moveNum}${idx%2===0?'':'..'}</span>
+        <span style="color:var(--text);font-weight:600;flex-shrink:0">${mv.played_san}</span>
+        <span style="color:${col};font-weight:700;font-size:12px;flex-shrink:0">${sym}</span>
+        <span style="color:${col};font-size:10px;overflow:hidden;text-overflow:ellipsis">${cls}</span>
       </div>
     `;
     // Click on classification card → toggle explanation panel
@@ -862,6 +869,25 @@
         _showPgnExplanation(idx);
       }
     };
+
+    // Show best line summary in bestline box
+    const hasBest = mv.best_san && mv.best_san !== mv.played_san;
+    if (bestlineBox) {
+      const bestLine = mv.best_line || [];
+      if (hasBest && bestLine.length > 0) {
+        const lineText = bestLine.map(m => m.san).join(' ');
+        bestlineBox.textContent = lineText;
+        bestlineBox.title = lineText;
+        bestlineBox.style.display = '';
+      } else if (hasBest) {
+        bestlineBox.textContent = '→ ' + mv.best_san;
+        bestlineBox.title = 'Best: ' + mv.best_san;
+        bestlineBox.style.display = '';
+      } else {
+        bestlineBox.style.display = 'none';
+        bestlineBox.textContent = '';
+      }
+    }
 
     // Suggestion ON  → green arrow (analyzePosition draws it, blue nahi chahiye)
     // Suggestion OFF → blue arrow (best move dikhao)
@@ -1056,6 +1082,18 @@
 
   function goToEnd() {
     if (moveHistory.length > 0) goToMove(moveHistory.length - 1);
+  }
+
+  // Switch back to main line (root variation) from any sub-variation
+  function goToMainLine() {
+    if (varTree.length === 0) return;
+    const root = varTree[0];
+    switchToVariation(root.id);
+    moveHistory = root.moves.slice();
+    if (currentMoveIdx >= moveHistory.length) currentMoveIdx = moveHistory.length - 1;
+    if (currentMoveIdx < 0) currentMoveIdx = 0;
+    goToMove(currentMoveIdx);
+    updatePGNMoves();
   }
 
   function updateTurnLabel() {

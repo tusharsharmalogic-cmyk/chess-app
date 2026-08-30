@@ -633,15 +633,24 @@ const fen = `${placement} ${setupTurn} ${castling} - 0 1`;
 
   function toggleSuggestion() {
     window._suggestionOn = !window._suggestionOn;
+    // Update analysis tab button (if present)
     const btn = document.getElementById('suggestion-toggle-btn');
-    if (window._suggestionOn) {
-      btn.textContent = '💡 Suggestion: ON';
-      btn.style.borderColor = 'var(--accent2)';
-      btn.style.color = 'var(--accent2)';
-    } else {
-      btn.textContent = '💡 Suggestion: OFF';
-      btn.style.borderColor = 'var(--border)';
-      btn.style.color = 'var(--text3)';
+    if (btn) {
+      if (window._suggestionOn) {
+        btn.textContent = '\uD83D\uDCA1 Suggestion: ON';
+        btn.style.borderColor = 'var(--accent2)';
+        btn.style.color = 'var(--accent2)';
+      } else {
+        btn.textContent = '\uD83D\uDCA1 Suggestion: OFF';
+        btn.style.borderColor = 'var(--border)';
+        btn.style.color = 'var(--text3)';
+      }
+    }
+    // Update PGN tab suggestion button
+    const pgnBtn = document.getElementById('pgn-suggestion-btn');
+    if (pgnBtn) {
+      pgnBtn.style.color = window._suggestionOn ? 'var(--accent2)' : 'var(--text3)';
+      pgnBtn.style.borderColor = window._suggestionOn ? 'var(--accent2)' : 'var(--border)';
     }
     _refreshSuggestionArrows();
   }
