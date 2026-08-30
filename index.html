@@ -214,6 +214,9 @@
         </div>
         <button onclick="flipBoard()" title="Flip board" style="flex:0 0 auto;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;line-height:1;">⇅ Flip</button>
       </div>
+      <div class="fen-label">Move History</div>
+      <div class="pgn-moves" id="pgn-moves"></div>
+      <div class="copied-flash" id="pgn-copied-flash" style="text-align:right;margin-top:2px">✓ Copied!</div>
       <div class="fen-area" style="margin-top:4px">
         <div class="fen-label">Load PGN</div>
         <textarea id="pgn-input" placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5..."></textarea>
