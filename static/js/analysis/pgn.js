@@ -932,6 +932,8 @@
   }
 
   function goToMove(idx) {
+    // Hide explanation panel on navigation
+    _hidePgnExplanation();
     // Use moveHistory (full game) — do NOT call game.history() after reset
     const allHistory = moveHistory.slice();   // save before any mutation
     if (allHistory.length === 0) return;

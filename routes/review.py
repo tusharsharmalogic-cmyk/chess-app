@@ -213,8 +213,8 @@ def review_analyze():
                 for pv_move in pv_moves:
                     try:
                         pv_san = pv_board.san(pv_move)
-                        pv_fen = pv_board.fen()
                         pv_board.push(pv_move)
+                        pv_fen = pv_board.fen()
                         best_line.append({"san": pv_san, "fen": pv_fen})
                     except Exception:
                         break
