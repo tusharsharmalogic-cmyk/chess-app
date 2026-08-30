@@ -839,6 +839,8 @@
       cardsEl.innerHTML = '';
       _hidePgnExplanation();
       _clearBestArrow();
+      // Hide board badge when not on main line (new variation = no review data)
+      if (!onMainLine) hideBoardBadge();
       return;
     }
 

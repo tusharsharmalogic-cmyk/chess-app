@@ -303,6 +303,8 @@
 
           moveHistory = newVerbose.slice();
           currentMoveIdx = moveHistory.length - 1;
+          // Hide board badge for new variation (no review data)
+          hideBoardBadge();
         } else {
           // ── Continue on same variation (extend it) ──
           moveHistory = game.history({ verbose: true });
