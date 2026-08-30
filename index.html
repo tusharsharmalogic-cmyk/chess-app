@@ -191,27 +191,28 @@
 
     <!-- PGN Tab -->
     <div class="tab-content" id="tab-pgn">
-      <!-- New nav row: 💡 | card | < > | best-line | 🔗 -->
-      <div id="pgn-nav-row" style="display:flex;align-items:center;gap:4px;margin:0;padding:0 0 6px 0;flex-wrap:nowrap;overflow:hidden;">
+      <!-- Row 1: 💡 | card | < > | 🔗 -->
+      <div id="pgn-nav-row" style="display:flex;align-items:center;gap:4px;margin:0;padding:0 0 4px 0;flex-wrap:nowrap;overflow:hidden;">
         <button id="pgn-suggestion-btn" onclick="toggleSuggestion()" title="Toggle suggestion arrow" style="flex:0 0 auto;min-width:0;padding:8px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--accent2);font-size:14px;cursor:pointer;line-height:1;">💡</button>
         <div id="pgn-move-cards" style="display:none;flex:1;min-width:0;overflow:hidden;"></div>
         <button class="btn" onclick="prevMove()" title="Previous" style="flex:0 0 auto;padding:8px 8px;font-size:14px;">◀</button>
         <button class="btn" onclick="nextMove()" title="Next" style="flex:0 0 auto;padding:8px 8px;font-size:14px;">▶</button>
-        <div id="pgn-bestline-box" style="display:none;flex:0 1 120px;min-width:0;overflow:hidden;font-size:10px;color:var(--text3);padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;"></div>
         <button id="pgn-mainline-btn" onclick="goToMainLine()" title="Go to main line" style="display:none;flex:0 0 auto;padding:8px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text2);font-size:13px;cursor:pointer;line-height:1;">🔗</button>
       </div>
-      <div id="pgn-explanation-panel" style="display:none;margin-top:4px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;"></div>
-      <div class="fen-label">Move History</div>
-      <div class="pgn-moves" id="pgn-moves"></div>
-      <div class="copied-flash" id="pgn-copied-flash" style="text-align:right;margin-top:2px">✓ Copied!</div>
-      <div id="analysis-opening-box" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:4px">
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:13px">📖</span>
-          <div style="min-width:0">
-            <div id="analysis-opening-name" style="font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-            <div id="analysis-opening-info" style="font-size:10px;color:var(--text3);margin-top:1px"></div>
+      <!-- Row 2: Best line (shown on card click) -->
+      <div id="pgn-explanation-panel" style="display:none;margin-bottom:4px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;"></div>
+      <!-- Row 3: Opening name + Flip board -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;min-height:20px;overflow:hidden;">
+        <div id="analysis-opening-box" style="display:none;flex:1;min-width:0;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;">
+            <span style="font-size:12px;flex-shrink:0">📖</span>
+            <div style="min-width:0;overflow:hidden;">
+              <div id="analysis-opening-name" style="font-size:11px;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+              <div id="analysis-opening-info" style="font-size:9px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+            </div>
           </div>
         </div>
+        <button onclick="flipBoard()" title="Flip board" style="flex:0 0 auto;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;line-height:1;">⇅ Flip</button>
       </div>
       <div class="fen-area" style="margin-top:4px">
         <div class="fen-label">Load PGN</div>

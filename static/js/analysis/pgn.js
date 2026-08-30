@@ -805,7 +805,6 @@
   function _renderMoveCards() {
     const cardsEl = document.getElementById('pgn-move-cards');
     const mainlineBtn = document.getElementById('pgn-mainline-btn');
-    const bestlineBox = document.getElementById('pgn-bestline-box');
     const suggBtn = document.getElementById('pgn-suggestion-btn');
     if (!cardsEl) return;
 
@@ -838,7 +837,7 @@
     if (!onPgnTab || !onMainLine || !mv || !mv.played_san) {
       cardsEl.style.display = 'none';
       cardsEl.innerHTML = '';
-      if (bestlineBox) { bestlineBox.style.display = 'none'; bestlineBox.textContent = ''; }
+      _hidePgnExplanation();
       _clearBestArrow();
       return;
     }
@@ -859,7 +858,7 @@
         <span style="color:${col};font-size:10px;overflow:hidden;text-overflow:ellipsis">${cls}</span>
       </div>
     `;
-    // Click on classification card → toggle explanation panel
+    // Click on classification card → toggle explanation panel (best line)
     cardsEl.onclick = () => {
       const panel = document.getElementById('pgn-explanation-panel');
       if (!panel) return;
@@ -870,24 +869,7 @@
       }
     };
 
-    // Show best line summary in bestline box
     const hasBest = mv.best_san && mv.best_san !== mv.played_san;
-    if (bestlineBox) {
-      const bestLine = mv.best_line || [];
-      if (hasBest && bestLine.length > 0) {
-        const lineText = bestLine.map(m => m.san).join(' ');
-        bestlineBox.textContent = lineText;
-        bestlineBox.title = lineText;
-        bestlineBox.style.display = '';
-      } else if (hasBest) {
-        bestlineBox.textContent = '→ ' + mv.best_san;
-        bestlineBox.title = 'Best: ' + mv.best_san;
-        bestlineBox.style.display = '';
-      } else {
-        bestlineBox.style.display = 'none';
-        bestlineBox.textContent = '';
-      }
-    }
 
     // Suggestion ON  → green arrow (analyzePosition draws it, blue nahi chahiye)
     // Suggestion OFF → blue arrow (best move dikhao)
