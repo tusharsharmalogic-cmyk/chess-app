@@ -631,7 +631,8 @@ function _recordWinner(roundIdx, matchIdx, side) {
 
 function _computeTop5(tState) {
   const st = {};
-  const key = p => p.type + ':' + p.id;
+  // Match leaderboard key format: player:user for user, bot:<id> for bots
+  const key = p => p.type === 'user' ? 'player:user' : 'bot:' + p.id;
   tState.rounds.forEach((round, ri) => {
     round.forEach(m => {
       [m.p1, m.p2].forEach(p => {
@@ -646,8 +647,9 @@ function _computeTop5(tState) {
     });
   });
   // Champion sabse door tak pahuncha
-  if (tState.champion && st[tState.champion.type + ':' + tState.champion.id]) {
-    st[tState.champion.type + ':' + tState.champion.id].out = tState.rounds.length;
+  const champKey = tState.champion ? (tState.champion.type === 'user' ? 'player:user' : 'bot:' + tState.champion.id) : null;
+  if (champKey && st[champKey]) {
+    st[champKey].out = tState.rounds.length;
   }
   return Object.values(st)
     .sort((a, b) => (b.out - a.out) || (b.wins - a.wins))
@@ -691,7 +693,7 @@ async function _archiveTournament() {
   try {
     const top5 = _computeTop5(T);
     const top3 = top5.slice(0, 3).map((p, i) => ({
-      key: p.type + ':' + p.id,
+      key: p.type === 'user' ? 'player:user' : 'bot:' + p.id,
       name: p.name,
       type: p.type,
       elo: p.elo || 1200,

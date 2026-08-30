@@ -109,7 +109,42 @@ def _lb_key(entity_type, entity_id):
     return f"{entity_type}:{entity_id}"
 
 
+def _lb_resolve_key(lb, key, name, entity_type):
+    """If key already exists, return it. Otherwise check if name matches any
+    existing entry (by profile name or other_names). If found, return that
+    entry's key so points merge into the same entry."""
+    if key in lb:
+        return key
+    name_lower = (name or '').strip().lower()
+    if not name_lower:
+        return key
+    # Load player profile for other_names matching (only for user entries)
+    other_names = []
+    if entity_type == 'player':
+        try:
+            player = load_player()
+            other_names = [n.strip().lower() for n in (player.get('other_names') or []) if n.strip()]
+        except Exception:
+            pass
+    for existing_key, entry in lb.items():
+        existing_name = (entry.get('name') or '').strip().lower()
+        if existing_name == name_lower:
+            return existing_key
+        # Check other_names for user entries
+        if entity_type == 'player' and name_lower in other_names:
+            return existing_key
+    return key
+
+
 def _lb_entry(lb, key, name, entity_type, elo):
+    # Resolve key by name matching to avoid duplicates
+    resolved = _lb_resolve_key(lb, key, name, entity_type)
+    if resolved != key and resolved in lb:
+        # Merge into existing entry — update name/type to latest
+        lb[resolved]['name'] = name
+        lb[resolved]['type'] = entity_type
+        lb[resolved]['elo'] = elo
+        return lb[resolved]
     if key not in lb:
         lb[key] = {
             "name": name,
