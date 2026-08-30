@@ -881,6 +881,7 @@ function drawArrowSVG(fromSq, toSq, markerId, color) {
         const fen = this.dataset.fen;
         if (fen && typeof board !== 'undefined') {
           board.position(fen, true);
+          hideBoardBadge();
         }
       });
     });
