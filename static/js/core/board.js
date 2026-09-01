@@ -303,8 +303,6 @@
 
           moveHistory = newVerbose.slice();
           currentMoveIdx = moveHistory.length - 1;
-          // Rebuild FEN cache for new variation
-          if (typeof _buildFenCache === 'function') _buildFenCache();
           // Hide board badge for new variation (no review data)
           hideBoardBadge();
         } else {
@@ -320,8 +318,6 @@
             // Update active node's moves
             const node = _activeNode();
             if (node) node.moves = moveHistory.slice();
-            // Rebuild FEN cache
-            if (typeof _buildFenCache === 'function') _buildFenCache();
           }
         }
 
