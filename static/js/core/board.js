@@ -128,11 +128,6 @@
   // in analysis — used to annotate PGN tokens + move cards with classifications.
   let _analysisReviewMoves = null;
 
-  // ── FEN Cache — precomputed at load time so goToMove is O(1) ──
-  // Indexed by ply: _fenCache[-1] = startFen, _fenCache[i] = FEN after move i
-  // Rebuilt whenever a new game/variation is loaded.
-  let _fenCache = [];   // _fenCache[i] = FEN after allHistory[i]
-
   function _newVarNode(parentId, branchMoveIdx, moves, label) {
     const id = _varIdCounter++;
     return { id, parentId, branchMoveIdx, moves: moves.slice(), label };

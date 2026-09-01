@@ -464,7 +464,7 @@
     nameEl.style.color = 'var(--text3)';
     infoEl.textContent = '';
 
-    // Build partial PGN up to currentMoveIdx for opening detection
+    // Build a temporary Chess with moves up to current position
     try {
       const tmpGame = new Chess(startFen);
       for (let i = 0; i <= currentMoveIdx && i < moveHistory.length; i++) {
@@ -543,8 +543,6 @@
     _varIdCounter = 0;
     varTree = [_newVarNode(null, 0, moveHistory, 'Main Line')];
     activeVarId = varTree[0].id;
-    // ── Precompute FEN for every ply so goToMove is O(1) ──
-    _fenCache = _buildFenCache(startFen, moveHistory);
     board.position(game.fen());
     updateFENDisplay();
     updatePGNMoves();
@@ -738,13 +736,7 @@
       const chip = document.createElement('span');
       chip.style.cssText = 'font-size:9px;color:' + (child.id === activeVarId ? 'var(--accent)' : 'var(--text3)') + ';letter-spacing:0.05em;text-transform:uppercase;font-weight:600;cursor:pointer;white-space:nowrap;';
       chip.textContent = '🔀 ' + child.label;
-      chip.onclick = () => {
-        switchToVariation(child.id);
-        // Navigate to the first move of this variation
-        const firstIdx = child.branchMoveIdx;
-        goToMove(firstIdx);
-        updatePGNMoves();
-      };
+      chip.onclick = () => { switchToVariation(child.id); };
       varBlock.appendChild(chip);
 
       // Render this child's moves inline (starting from its branch point)
@@ -890,10 +882,10 @@
         setTimeout(() => {
           if (currentMoveIdx !== _idx || _currentTab !== 'pgn') return;
           try {
-            // Use cached FEN for position before _idx (i.e. after _idx-1 moves)
-            const preFen = (_idx > 0 && _fenCache.length >= _idx)
-              ? _fenCache[_idx - 1] : startFen;
-            const replayGame = new Chess(preFen);
+            const rootNode = varTree.length > 0 ? varTree[0] : null;
+            const allHistory = rootNode ? rootNode.moves : [];
+            const replayGame = new Chess(startFen);
+            for (let k = 0; k < _idx; k++) replayGame.move(allHistory[k].san);
             const parsed = replayGame.move(_bestSan);
             if (parsed) {
               const svg = document.getElementById('arrow-svg');
@@ -916,22 +908,7 @@
     if (!node) return;
     activeVarId = nodeId;
     moveHistory = node.moves.slice();
-    // Rebuild FEN cache for the new variation's move list
-    _fenCache = _buildFenCache(startFen, moveHistory);
     // Don't auto-navigate — just switch active; caller handles goToMove
-  }
-
-  // ── FEN Cache Builder ────────────────────────────────────────
-  // Returns array of FENs: index i = FEN after moves[i] has been played.
-  // Called once at load/variation-switch so goToMove stays O(1).
-  function _buildFenCache(fen, moves) {
-    const tmp = new Chess(fen);
-    const cache = [];
-    for (const mv of moves) {
-      try { tmp.move(mv.san); } catch(e) { break; }
-      cache.push(tmp.fen());
-    }
-    return cache;
   }
 
   // Debounce timer for analyzePosition during rapid navigation
@@ -984,9 +961,11 @@
     if (idx < 0) { goToStart(); return; }
     idx = Math.min(idx, allHistory.length - 1);
 
-    // O(1) FEN lookup — no more full replay loop
-    const targetFen = (_fenCache.length > idx && idx >= 0) ? _fenCache[idx] : startFen;
-    game.load(targetFen);
+    // Replay from the real start FEN (not necessarily standard start)
+    game.load(startFen);
+    for (let i = 0; i <= idx; i++) {
+      game.move(allHistory[i].san);
+    }
     currentMoveIdx = idx;
     clearTapSelection();
     board.position(game.fen());
@@ -1025,15 +1004,8 @@
     const container = document.getElementById('pgn-moves');
     if (!container) { updatePGNMoves(); return; }
 
-    // If varTree has multiple nodes (variations present), always do full rebuild
-    // because rendered move buttons include variation nodes too, making count checks unreliable.
-    if (varTree.length > 1) {
-      updatePGNMoves();
-      return;
-    }
-
     // Check if the rendered list matches the current move count (simple guard).
-    // If not (e.g. new game loaded) fall back to full render.
+    // If not (e.g. new game loaded, variation switched) fall back to full render.
     const moveBtns = container.querySelectorAll('.pgn-token.move');
     if (moveBtns.length !== moveHistory.length) {
       updatePGNMoves();
