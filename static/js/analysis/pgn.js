@@ -443,6 +443,10 @@
   }
 
   // PGN
+  // ── FEN cache: pre-computed positions for instant navigation ──
+  let _fenCache = [];        // _fenCache[i] = FEN after move i
+  let _openingCache = {};     // 'san1+san2+...+sanN' → opening result
+
   // ── Opening detection (Analysis/PGN tab) ──────────────────
   let _analysisOpeningTimer = null;
 
@@ -464,16 +468,36 @@
     nameEl.style.color = 'var(--text3)';
     infoEl.textContent = '';
 
-    // Build a temporary Chess with moves up to current position
+    // Use FEN cache + opening cache — avoid replay + network call
     try {
-      const tmpGame = new Chess(startFen);
-      for (let i = 0; i <= currentMoveIdx && i < moveHistory.length; i++) {
-        tmpGame.move(moveHistory[i].san);
-      }
+      const fen = (currentMoveIdx >= 0 && currentMoveIdx < _fenCache.length) ? _fenCache[currentMoveIdx] : startFen;
+      const tmpGame = new Chess(fen);
       const partialPgn = tmpGame.pgn();
       if (!partialPgn || !partialPgn.trim()) {
         box.style.display = 'none';
         return;
+      }
+
+      // Check opening cache first — skip API if already detected
+      const cacheKey = moveHistory.slice(0, currentMoveIdx + 1).map(m => m.san).join('+');
+      if (_openingCache[cacheKey]) {
+        const cached = _openingCache[cacheKey];
+        if (cached.opening) {
+          const op = cached.opening;
+          nameEl.textContent = op.eco ? `${op.name} (${op.eco})` : op.name;
+          nameEl.style.color = 'var(--accent)';
+          const halfMoves = op.moves_played || 0;
+          let info = `${halfMoves} half-moves in book`;
+          if (op.move_text) info += ' \u2022 ' + op.move_text;
+          infoEl.textContent = info;
+          box.style.display = '';
+        } else {
+          box.style.display = '';
+          nameEl.textContent = 'Opening not recognized';
+          nameEl.style.color = 'var(--text3)';
+          infoEl.textContent = '';
+        }
+        return; // cached — skip network call
       }
 
       const res = await fetch(`${FLASK_URL}/review/opening`, {
@@ -482,6 +506,7 @@
         body: JSON.stringify({ pgn: partialPgn }),
       });
       const data = await res.json();
+      _openingCache[cacheKey] = data; // cache the result
 
       if (data.ok && data.opening) {
         const op = data.opening;
@@ -540,6 +565,11 @@
     startFen = fenHeader || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     moveHistory = game.history({ verbose: true });
     currentMoveIdx = moveHistory.length - 1;
+
+    // ── Build FEN cache (one-time O(n) replay) ──
+    _buildFenCache();
+    // Reset opening cache for new game
+    _openingCache = {};
     _varIdCounter = 0;
     varTree = [_newVarNode(null, 0, moveHistory, 'Main Line')];
     activeVarId = varTree[0].id;
@@ -882,10 +912,9 @@
         setTimeout(() => {
           if (currentMoveIdx !== _idx || _currentTab !== 'pgn') return;
           try {
-            const rootNode = varTree.length > 0 ? varTree[0] : null;
-            const allHistory = rootNode ? rootNode.moves : [];
-            const replayGame = new Chess(startFen);
-            for (let k = 0; k < _idx; k++) replayGame.move(allHistory[k].san);
+            // Use FEN cache instead of replaying!
+            const fen = (_idx >= 0 && _idx < _fenCache.length) ? _fenCache[_idx] : startFen;
+            const replayGame = new Chess(fen);
             const parsed = replayGame.move(_bestSan);
             if (parsed) {
               const svg = document.getElementById('arrow-svg');
@@ -908,7 +937,18 @@
     if (!node) return;
     activeVarId = nodeId;
     moveHistory = node.moves.slice();
+    _buildFenCache();
     // Don't auto-navigate — just switch active; caller handles goToMove
+  }
+
+  // Build FEN cache from current moveHistory — call on PGN load & variation switch
+  function _buildFenCache() {
+    _fenCache = new Array(moveHistory.length);
+    const g = new Chess(startFen);
+    for (let i = 0; i < moveHistory.length; i++) {
+      g.move(moveHistory[i].san);
+      _fenCache[i] = g.fen();
+    }
   }
 
   // Debounce timer for analyzePosition during rapid navigation
@@ -961,14 +1001,12 @@
     if (idx < 0) { goToStart(); return; }
     idx = Math.min(idx, allHistory.length - 1);
 
-    // Replay from the real start FEN (not necessarily standard start)
-    game.load(startFen);
-    for (let i = 0; i <= idx; i++) {
-      game.move(allHistory[i].san);
-    }
+    // Use cached FEN — no replay needed!
+    const fen = (idx >= 0 && idx < _fenCache.length) ? _fenCache[idx] : startFen;
+    game.load(fen);
     currentMoveIdx = idx;
     clearTapSelection();
-    board.position(game.fen());
+    board.position(fen);
     updateFENDisplay();
     updateTurnLabel();
     updatePGNMovesHighlight(idx);
@@ -978,9 +1016,9 @@
       const navMove = allHistory[idx];
       if (navMove) SoundFX.playForMove(game, navMove);
     }
-    // Show last played move as blue arrow
+    // Show last played move as blue arrow (no replay needed — from/to already in moveHistory)
     const lastMove = allHistory[idx];
-    if (lastMove) setTimeout(() => drawArrow(lastMove.from, lastMove.to, 'last'), 90);
+    if (lastMove) setTimeout(() => drawArrow(lastMove.from, lastMove.to, 'last'), 60);
 
     // Debounce analyzePosition — rapid navigation pe baar baar engine call na ho
     if (_analyzeDebounceTimer) clearTimeout(_analyzeDebounceTimer);
@@ -1074,6 +1112,7 @@
     const root = varTree[0];
     switchToVariation(root.id);
     moveHistory = root.moves.slice();
+    _buildFenCache();
     if (currentMoveIdx >= moveHistory.length) currentMoveIdx = moveHistory.length - 1;
     if (currentMoveIdx < 0) currentMoveIdx = 0;
     goToMove(currentMoveIdx);
