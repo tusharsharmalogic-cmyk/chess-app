@@ -738,7 +738,13 @@
       const chip = document.createElement('span');
       chip.style.cssText = 'font-size:9px;color:' + (child.id === activeVarId ? 'var(--accent)' : 'var(--text3)') + ';letter-spacing:0.05em;text-transform:uppercase;font-weight:600;cursor:pointer;white-space:nowrap;';
       chip.textContent = '🔀 ' + child.label;
-      chip.onclick = () => { switchToVariation(child.id); };
+      chip.onclick = () => {
+        switchToVariation(child.id);
+        // Navigate to the first move of this variation
+        const firstIdx = child.branchMoveIdx;
+        goToMove(firstIdx);
+        updatePGNMoves();
+      };
       varBlock.appendChild(chip);
 
       // Render this child's moves inline (starting from its branch point)
@@ -1019,8 +1025,15 @@
     const container = document.getElementById('pgn-moves');
     if (!container) { updatePGNMoves(); return; }
 
+    // If varTree has multiple nodes (variations present), always do full rebuild
+    // because rendered move buttons include variation nodes too, making count checks unreliable.
+    if (varTree.length > 1) {
+      updatePGNMoves();
+      return;
+    }
+
     // Check if the rendered list matches the current move count (simple guard).
-    // If not (e.g. new game loaded, variation switched) fall back to full render.
+    // If not (e.g. new game loaded) fall back to full render.
     const moveBtns = container.querySelectorAll('.pgn-token.move');
     if (moveBtns.length !== moveHistory.length) {
       updatePGNMoves();
