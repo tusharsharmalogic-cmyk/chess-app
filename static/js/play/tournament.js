@@ -596,7 +596,7 @@ function tourViewBracket() {
 
 // ── Match progression core ────────────────────────────────────
 
-function _recordWinner(roundIdx, matchIdx, side) {
+async function _recordWinner(roundIdx, matchIdx, side) {
   const m = T.rounds[roundIdx][matchIdx];
   m.winner = side;
 
@@ -608,7 +608,7 @@ function _recordWinner(roundIdx, matchIdx, side) {
       T.status = 'complete';
       T.champion = winners[0];
       if (winners[0].type === 'bot') T.userEliminated = true;
-      if (!T.archived) { T.archived = true; _archiveTournament(); }
+      if (!T.archived) { T.archived = true; await _archiveTournament(); }
     } else {
       const next = [];
       for (let i = 0; i < winners.length; i += 2) {
@@ -909,7 +909,7 @@ async function tourOnBvbGameOver() {
     }
   }
 
-  _recordWinner(ctx.roundIdx, ctx.matchIdx, winnerSide);
+  await _recordWinner(ctx.roundIdx, ctx.matchIdx, winnerSide);
   await _afterMatchResolved();
 }
 
@@ -1039,7 +1039,7 @@ async function tourOnUserGameOver(title) {
         // Decide by Elo (higher advances)
         const userP = m.p1.type === 'user' ? m.p1 : m.p2;
         const oppP  = m.p1.type === 'user' ? m.p2 : m.p1;
-        _recordWinner(ctx.roundIdx, ctx.matchIdx, userP.elo >= oppP.elo
+        await _recordWinner(ctx.roundIdx, ctx.matchIdx, userP.elo >= oppP.elo
           ? (m.p1.type === 'user' ? 'p1' : 'p2')
           : (m.p1.type === 'user' ? 'p2' : 'p1'));
         await _afterMatchResolved();
@@ -1053,7 +1053,7 @@ async function tourOnUserGameOver(title) {
 
   userWon = outcome === 'win';
   const userSide = m.p1.type === 'user' ? 'p1' : 'p2';
-  _recordWinner(ctx.roundIdx, ctx.matchIdx, userWon ? userSide : (userSide === 'p1' ? 'p2' : 'p1'));
+  await _recordWinner(ctx.roundIdx, ctx.matchIdx, userWon ? userSide : (userSide === 'p1' ? 'p2' : 'p1'));
   await _afterMatchResolved();
 }
 
@@ -1240,7 +1240,7 @@ async function tourSkip() {
   while (T.status === 'active' && guard-- > 0) {
     const cur = _currentMatch();
     if (!cur) break;
-    _recordWinner(cur.roundIdx, cur.matchIdx, _simWinner(cur.match.p1, cur.match.p2));
+    await _recordWinner(cur.roundIdx, cur.matchIdx, _simWinner(cur.match.p1, cur.match.p2));
   }
   await _tourSave();
   tourReturnToBracket();
