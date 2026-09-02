@@ -690,14 +690,17 @@ async function _archiveTournament() {
   } catch(e) { /* ignore */ }
 
   // ── Leaderboard: award tournament bonus points to top 3 ──
+  // Condition: kam se kam 1 win hona chahiye (0 wins = no bonus)
   try {
     const top5 = _computeTop5(T);
-    const top3 = top5.slice(0, 3).map((p, i) => ({
+    const qualified = top5.filter(p => (p.wins || 0) >= 1);
+    const top3 = qualified.slice(0, 3).map((p, i) => ({
       key: p.type === 'user' ? 'player:user' : 'bot:' + p.id,
       name: p.name,
       type: p.type,
       elo: p.elo || 1200,
       place: i + 1,
+      wins: p.wins || 0,
     }));
     if (top3.length > 0) {
       await fetch(`${FLASK_URL}/play/leaderboard/tournament-top`, {

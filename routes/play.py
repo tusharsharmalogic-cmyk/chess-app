@@ -151,8 +151,11 @@ def _lb_entry(lb, key, name, entity_type, elo):
             "type": entity_type,
             "elo": elo,
             "points": 0,
+            "wins": 0,
             "history": [],  # [{ts, opponent, result, elo_delta, points, context}]
         }
+    if 'wins' not in lb[key]:
+        lb[key]['wins'] = 0
     return lb[key]
 
 
@@ -167,6 +170,7 @@ def _lb_record_match(lb, winner_key, loser_key, w_name, w_type, w_elo,
 
     w_entry = _lb_entry(lb, winner_key, w_name, w_type, w_elo)
     w_entry["elo"] = w_elo
+    w_entry["wins"] = w_entry.get("wins", 0) + 1
     w_pts = 5 + abs_delta
     w_entry["points"] += w_pts
     w_entry["history"].insert(0, {
@@ -206,11 +210,15 @@ def _lb_record_draw(lb, key1, key2, n1, t1, e1, n2, t2, e2, delta):
 
 
 def _lb_record_tournament(lb, key, name, etype, elo, place):
-    """Record tournament bonus. place: 1, 2, or 3."""
+    """Record tournament bonus. place: 1, 2, or 3.
+    Condition: player must have at least 1 win to qualify for bonus."""
     bonus = {1: 200, 2: 100, 3: 50}.get(place, 0)
     if bonus <= 0:
         return
     entry = _lb_entry(lb, key, name, etype, elo)
+    # Safety: enforce minimum 1 win for top 3 bonus
+    if entry.get("wins", 0) < 1:
+        return
     entry["elo"] = elo
     entry["points"] += bonus
     entry["history"].insert(0, {
@@ -840,6 +848,7 @@ def get_leaderboard():
             "type": entry.get("type", "bot"),
             "elo": entry.get("elo", 1200),
             "points": entry.get("points", 0),
+            "wins": entry.get("wins", 0),
         })
     entries.sort(key=lambda e: (-e["points"], -e["elo"]))
     return jsonify({"entries": entries})
@@ -856,6 +865,7 @@ def get_leaderboard_history(key):
         "type": entry.get("type", "bot"),
         "elo": entry.get("elo", 1200),
         "points": entry.get("points", 0),
+        "wins": entry.get("wins", 0),
         "history": entry.get("history", [])[:10],
     })
 

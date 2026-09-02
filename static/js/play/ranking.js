@@ -40,13 +40,13 @@
 
       // Table header
       const hdr = document.createElement('div');
-      hdr.style.cssText = 'display:grid;grid-template-columns:36px 1fr 70px 80px;gap:4px;padding:4px 8px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)';
-      hdr.innerHTML = '<div>#</div><div>Name</div><div style="text-align:right">ELO</div><div style="text-align:right">Points</div>';
+      hdr.style.cssText = 'display:grid;grid-template-columns:36px 1fr 50px 70px 80px;gap:4px;padding:4px 8px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)';
+      hdr.innerHTML = '<div>#</div><div>Name</div><div style="text-align:center">Wins</div><div style="text-align:right">ELO</div><div style="text-align:right">Points</div>';
       container.appendChild(hdr);
 
       entries.forEach((entry, idx) => {
         const row = document.createElement('div');
-        row.style.cssText = `display:grid;grid-template-columns:36px 1fr 70px 80px;gap:4px;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s`;
+        row.style.cssText = `display:grid;grid-template-columns:36px 1fr 50px 70px 80px;gap:4px;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s`;
         row.onmouseenter = () => row.style.background = 'rgba(255,255,255,0.04)';
         row.onmouseleave = () => row.style.background = '';
         row.onclick = () => showPlayerDetail(entry.key);
@@ -58,6 +58,7 @@
         row.innerHTML = `
           <div style="font-weight:600;color:var(--text2)">${medal || (idx + 1)}</div>
           <div style="color:var(--text);font-weight:500">${_esc(entry.name)}</div>
+          <div style="text-align:center;color:var(--text3)">${entry.wins != null ? entry.wins : '-'}</div>
           <div style="text-align:right;color:var(--text2)">${entry.elo}</div>
           <div style="text-align:right;font-weight:700;color:${ptsColor}">${pts >= 0 ? '+' : ''}${pts}</div>
         `;
@@ -88,9 +89,14 @@
 
       const ptsColor = data.points > 0 ? 'var(--accent2)' : data.points < 0 ? 'var(--danger)' : 'var(--text2)';
       titleEl.textContent = `${data.name}`;
+      // Calculate tournament bonus from history
+      const tourBonus = (data.history || []).reduce((s, h) => s + (h.context && h.context.startsWith('tournament_top') ? (h.points || 0) : 0), 0);
+      const matchWins = (data.history || []).filter(h => h.result === 'win').length;
       statsEl.innerHTML = `
         <span style="margin-right:12px">ELO: <b>${data.elo}</b></span>
-        <span>Points: <b style="color:${ptsColor}">${data.points >= 0 ? '+' : ''}${data.points}</b></span>
+        <span style="margin-right:12px">Wins: <b style="color:var(--accent2)">${matchWins}</b></span>
+        <span style="margin-right:12px">Points: <b style="color:${ptsColor}">${data.points >= 0 ? '+' : ''}${data.points}</b></span>
+        ${tourBonus > 0 ? `<span>Tournament Bonus: <b style="color:var(--accent)">+${tourBonus}</b></span>` : ''}
       `;
 
       if (!data.history || data.history.length === 0) {
