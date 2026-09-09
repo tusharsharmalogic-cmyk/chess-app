@@ -18,6 +18,7 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context
 
 from helpers import (
     detect_game_phase,
+    position_in_book,
     lucas_lv_dif, lucas_classify, move_accuracy_from_dif,
     game_accuracy_from_move_accs, game_elo_from_accuracy, cp_from_info,
     load_json_file, save_json_file,
@@ -151,6 +152,16 @@ def review_analyze():
     moves  = list(game.mainline_moves())
     total  = len(moves)
 
+    # Starting position se opening_locked decide karo (PGN-loaded games ke liye)
+    start_fen = board.fen()
+    start_opening_locked = True
+    if start_fen != chess.STARTING_FEN:
+        try:
+            start_board = chess.Board(start_fen)
+            start_opening_locked = position_in_book(start_board)
+        except Exception:
+            start_opening_locked = False
+
     EMOJIS = {
         "Brilliant": "!!", "Best": "✓", "Excellent": "★",
         "Good": "✦", "Inaccuracy": "?!", "Mistake": "?", "Blunder": "??",
@@ -239,7 +250,7 @@ def review_analyze():
 
                 # Phase detection for this move
                 move_num = (idx // 2) + 1
-                phase = detect_game_phase(board, move_num, None)
+                phase = detect_game_phase(board, move_num, start_opening_locked)
                 phase_accuracy_list[phase][is_white].append(accuracy)
 
                 cat = classification if classification in counts[is_white] else "Good"

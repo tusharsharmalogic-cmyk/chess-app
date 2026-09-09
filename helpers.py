@@ -86,21 +86,55 @@ def get_opening_book():
     return _opening_book
 
 
+# Cache for openings.json FENs
+_openings_json_fens = None
+
+def _load_openings_json_fens():
+    global _openings_json_fens
+    if _openings_json_fens is not None:
+        return _openings_json_fens
+    _openings_json_fens = set()
+    try:
+        import json
+        openings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'openings.json')
+        if os.path.exists(openings_path):
+            with open(openings_path, 'r') as f:
+                openings_data = json.load(f)
+            for entry in openings_data:
+                fen = entry.get('fen', '').split(' ')[0]
+                if fen:
+                    _openings_json_fens.add(fen)
+    except Exception:
+        pass
+    return _openings_json_fens
+
+
 def position_in_book(board):
     """
-    Raw Polyglot book lookup — used ONLY by /play/check-opening for the
-    one-time decision when a game is started from a loaded PGN/FEN.
-    Starting position always counts as opening even if book.bin is missing.
+    Check if position is in opening book (Polyglot OR openings.json).
+    Starting position always counts as opening.
     """
-    if board.fullmove_number <= 1 and board.fen() == chess.Board().fen():
+    if board.fen() == chess.Board().fen():
         return True
+    
+    # Try Polyglot book first
     book = get_opening_book()
-    if book is None:
-        return False
+    if book is not None:
+        try:
+            if book.get(board) is not None:
+                return True
+        except Exception:
+            pass
+    
+    # Try openings.json FEN lookup (cached)
     try:
-        return book.get(board) is not None
+        fen_to_check = board.fen().split(' ')[0]
+        if fen_to_check in _load_openings_json_fens():
+            return True
     except Exception:
-        return False
+        pass
+    
+    return False
 
 
 def is_opening_phase(move_num, opening_locked):
