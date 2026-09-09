@@ -413,7 +413,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
     }
   }
 
-  function openHistoryDetail(gameId) {
+  async function openHistoryDetail(gameId) {
     const g = _historyGames.find(x => x.id === gameId);
     if (!g) return;
     _historyDetailGame = g;
@@ -447,6 +447,33 @@ const depth = parseInt(document.getElementById('depth-slider').value);
       <div><b>Time control:</b> ${tc}</div>
       <div><b>Time left — White:</b> ${wLeft} &nbsp;|&nbsp; <b>Black:</b> ${bLeft}</div>
     `;
+
+    // Phase-wise accuracy (if game reviewed) — fetch from review history
+    if (g.pgn) {
+      try {
+        const rvhRes = await fetch(`${FLASK_URL}/review/history`);
+        const rvhData = await rvhRes.json();
+        const rvhList = rvhData.history || rvhData || [];
+        const reviewMatch = rvhList.find(r => r.pgn === g.pgn);
+        if (reviewMatch && reviewMatch.summary && reviewMatch.summary.phase_accuracies) {
+          const phaseAcc = reviewMatch.summary.phase_accuracies;
+          const accColor = v => v >= 90 ? 'var(--accent2)' : v >= 75 ? 'var(--accent)' : v >= 60 ? '#e0a84a' : 'var(--danger)';
+          const phaseLabels = { opening: '🌱 Opening', middlegame: '⚔️ Middlegame', endgame: '🏁 Endgame' };
+          const phaseOrder = ['opening', 'middlegame', 'endgame'];
+          let phaseHtml = '';
+          phaseOrder.forEach(phase => {
+            const data = phaseAcc[phase];
+            if (!data || (data.white_moves === 0 && data.black_moves === 0)) return;
+            const wAcc = data.white !== null && data.white !== undefined ? data.white : '—';
+            const bAcc = data.black !== null && data.black !== undefined ? data.black : '—';
+            phaseHtml += `<div><b>${phaseLabels[phase]}:</b> White ${wAcc}% (${data.white_moves}m) · Black ${bAcc}% (${data.black_moves}m)</div>`;
+          });
+          if (phaseHtml) {
+            meta.innerHTML += `<div style="border-top:1px solid var(--border);padding-top:4px;margin-top:4px">${phaseHtml}</div>`;
+          }
+        }
+      } catch(e) { /* review history not available */ }
+    }
 
     // Load review data if this game has been reviewed
     _loadHistoryReviewPanel(g);

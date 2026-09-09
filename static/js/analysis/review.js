@@ -246,6 +246,33 @@
     document.getElementById('rv-white-acc').style.color = accColor(parseFloat(s.white.accuracy));
     document.getElementById('rv-black-acc').style.color = accColor(parseFloat(s.black.accuracy));
 
+    // Phase-wise accuracy display
+    const phaseAcc = s.phase_accuracies || {};
+    const phaseContainer = document.getElementById('rv-phase-accuracy');
+    if (phaseContainer && phaseAcc) {
+      phaseContainer.innerHTML = '';
+      const phaseLabels = { opening: '🌱 Opening', middlegame: '⚔️ Middlegame', endgame: '🏁 Endgame' };
+      const phaseOrder = ['opening', 'middlegame', 'endgame'];
+      phaseOrder.forEach(phase => {
+        const data = phaseAcc[phase];
+        if (!data || (data.white_moves === 0 && data.black_moves === 0)) return;
+        const wAcc = data.white !== null && data.white !== undefined ? data.white : '—';
+        const bAcc = data.black !== null && data.black !== undefined ? data.black : '—';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)';
+        row.innerHTML = `
+          <div style="padding:8px 12px;border-right:1px solid var(--border)">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">${phaseLabels[phase]}</div>
+            <div style="font-size:16px;font-weight:600;color:${accColor(parseFloat(wAcc) || 0)}">${wAcc}% <span style="font-size:9px;color:var(--text3)">(${data.white_moves}m)</span></div>
+          </div>
+          <div style="padding:8px 12px">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">${phaseLabels[phase]}</div>
+            <div style="font-size:16px;font-weight:600;color:${accColor(parseFloat(bAcc) || 0)}">${bAcc}% <span style="font-size:9px;color:var(--text3)">(${data.black_moves}m)</span></div>
+          </div>`;
+        phaseContainer.appendChild(row);
+      });
+    }
+
     // Per-classification rows
     const ORDER = ['Best','Excellent','Good','Inaccuracy','Mistake','Blunder'];
     const SYMS  = { Brilliant:'!!', Best:'✓', Excellent:'★', Good:'✦', Inaccuracy:'?!', Mistake:'?', Blunder:'??' };
@@ -882,6 +909,33 @@
 
     document.getElementById('rvh-d-white-elo').textContent = g.white_elo || '—';
     document.getElementById('rvh-d-black-elo').textContent = g.black_elo || '—';
+
+    // Phase-wise accuracy display for review history detail
+    const phaseAccContainer = document.getElementById('rvh-d-phase-accuracy');
+    if (phaseAccContainer) {
+      phaseAccContainer.innerHTML = '';
+      const phaseAcc = (g.summary && g.summary.phase_accuracies) || {};
+      const phaseLabels = { opening: '🌱 Opening', middlegame: '⚔️ Middlegame', endgame: '🏁 Endgame' };
+      const phaseOrder = ['opening', 'middlegame', 'endgame'];
+      phaseOrder.forEach(phase => {
+        const data = phaseAcc[phase];
+        if (!data || (data.white_moves === 0 && data.black_moves === 0)) return;
+        const wAcc = data.white !== null && data.white !== undefined ? data.white : '—';
+        const bAcc = data.black !== null && data.black !== undefined ? data.black : '—';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)';
+        row.innerHTML = `
+          <div style="padding:8px 12px;border-right:1px solid var(--border)">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">${phaseLabels[phase]}</div>
+            <div style="font-size:16px;font-weight:600;color:${accColor(parseFloat(wAcc) || 0)}">${wAcc}% <span style="font-size:9px;color:var(--text3)">(${data.white_moves}m)</span></div>
+          </div>
+          <div style="padding:8px 12px">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px">${phaseLabels[phase]}</div>
+            <div style="font-size:16px;font-weight:600;color:${accColor(parseFloat(bAcc) || 0)}">${bAcc}% <span style="font-size:9px;color:var(--text3)">(${data.black_moves}m)</span></div>
+          </div>`;
+        phaseAccContainer.appendChild(row);
+      });
+    }
 
     // Per-classification breakdown — kitni Best/Excellent/Good/Inaccuracy/Mistake/Blunder chalein
     const ORDER = ['Best','Excellent','Good','Inaccuracy','Mistake','Blunder'];

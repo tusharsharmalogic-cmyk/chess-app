@@ -17,6 +17,7 @@ import chess.pgn
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 
 from helpers import (
+    detect_game_phase,
     lucas_lv_dif, lucas_classify, move_accuracy_from_dif,
     game_accuracy_from_move_accs, game_elo_from_accuracy, cp_from_info,
     load_json_file, save_json_file,
@@ -158,6 +159,11 @@ def review_analyze():
     def generate():
         results       = []
         accuracy_list = {True: [], False: []}
+        phase_accuracy_list = {
+            'opening':    {True: [], False: []},
+            'middlegame': {True: [], False: []},
+            'endgame':    {True: [], False: []},
+        }
         counts        = {
             True:  {"Brilliant":0,"Best":0,"Excellent":0,"Good":0,"Inaccuracy":0,"Mistake":0,"Blunder":0},
             False: {"Brilliant":0,"Best":0,"Excellent":0,"Good":0,"Inaccuracy":0,"Mistake":0,"Blunder":0},
@@ -231,6 +237,11 @@ def review_analyze():
                 accuracy = move_accuracy_from_dif(dif)
                 accuracy_list[is_white].append(accuracy)
 
+                # Phase detection for this move
+                move_num = (idx // 2) + 1
+                phase = detect_game_phase(board, move_num, None)
+                phase_accuracy_list[phase][is_white].append(accuracy)
+
                 cat = classification if classification in counts[is_white] else "Good"
                 counts[is_white][cat] = counts[is_white].get(cat, 0) + 1
 
@@ -276,6 +287,18 @@ def review_analyze():
         white_accuracy = game_accuracy_from_move_accs(accuracy_list[True])
         black_accuracy = game_accuracy_from_move_accs(accuracy_list[False])
 
+        # Phase-wise accuracy calculation
+        phase_accuracies = {}
+        for phase in ['opening', 'middlegame', 'endgame']:
+            w_acc = game_accuracy_from_move_accs(phase_accuracy_list[phase][True])
+            b_acc = game_accuracy_from_move_accs(phase_accuracy_list[phase][False])
+            phase_accuracies[phase] = {
+                'white': w_acc,
+                'black': b_acc,
+                'white_moves': len(phase_accuracy_list[phase][True]),
+                'black_moves': len(phase_accuracy_list[phase][False]),
+            }
+
         summary = {
             "white": {
                 "name":     white_name,
@@ -291,6 +314,7 @@ def review_analyze():
             },
             "total_moves": total,
             "depth_used":  depth,
+            "phase_accuracies": phase_accuracies,
         }
 
         yield f"data: {json.dumps({'type': 'done', 'summary': summary, 'moves': results})}\n\n"
