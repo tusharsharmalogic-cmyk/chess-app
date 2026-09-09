@@ -57,13 +57,20 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 - Color choice — kaun sa player kaun sa color lega woh decide karo
 
 ### 🏆 Tournament Mode
-- Multiple bots ka **round-robin / elimination (Championship knockout)** tournament client-side run hota hai
+- Multiple bots ka **Championship knockout** tournament client-side run hota hai
+- **🎨 User Color Choice (NEW)** — White / Black / Random select karo apni matches ke liye
+- **🏅 Tournament Points System** — Top 3 ko bonus points:
+  - 🥇 1st place: **+200 points**
+  - 🥈 2nd place: **+100 points**
+  - 🥉 3rd place: **+50 points**
+  - Points Ranking tab mein dikhte hain (leaderboard)
 - Tournament state server par persist hota hai — page reload par bhi resume hoti hai
 - Completed tournaments ka **history** (max 50 entries) save hota hai — detail dekho ya multi-select delete
-- 🥊 **Duo Fight mode (NEW)** — Bot vs User **score battle**: multiple bots ke against khelo, score-battle history cards ke saath
+- 🥊 **Duo Fight mode** — Bot vs User **score battle**: multiple bots ke against khelo, score-battle history cards ke saath
   - Fair duo tie-break — dono ko extra round milta hai
   - Mid-match resume after restart, tab return par in-game UI restore
   - Duo state server par persist hota hai (`play_data/duo.json`)
+  - User color choice Duo Fight mein bhi available
 - Tournament setup panels cleaner UI + select-mode checkboxes ke saath
 - Tournament settings auto-save hoti hain (checkbox/slider change par event delegation)
 
@@ -103,6 +110,13 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 - **Lucas Chess classification** — Brilliant !!, Best ✓, Excellent ★, Good ✦, Inaccuracy ?!, Mistake ?, Blunder ??
 - Extra labels: Great Move, Mate Blunder, Queen Donation, Free Gift
 - Per-move accuracy + game accuracy (RMS method) + estimated Elo from accuracy
+- **🎯 Phase-wise Accuracy (NEW)** — Opening / Middlegame / Endgame ki alag accuracy:
+  - 🌱 Opening accuracy + move count
+  - ⚔️ Middlegame accuracy + move count
+  - 🏁 Endgame accuracy + move count
+  - White aur Black dono ke liye alag-alag
+- **📊 Overall Accuracy** — Review summary, review history aur play history teeno mein
+- **Opening detection ab openings.json se** — 3810+ openings ke FEN match karke phase detect hota hai
 - Eval graph (canvas chart), review history save/load
 - Analysis tab mein review badges PGN moves par superfix ke roop mein dikhte hain
 
@@ -115,6 +129,10 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 
 ### 📜 History
 - Saare games ka record — **structured collapsible groups** (Player vs Bot / Bot vs Bot / Play with Friend alag-alag sections)
+- **📊 Accuracy Display (NEW)** — Play history detail mein reviewed games ki:
+  - Overall accuracy (White/Black)
+  - Phase-wise accuracy (Opening/Middlegame/Endgame)
+  - Review history se auto-match karke
 - Multi-select delete, clear all
 - Kisi bhi game ko Analysis ya Review mein directly open karo
 - Imported games ka alag section (PGN paste / .pgn/.txt file upload)
@@ -136,9 +154,11 @@ App specially **Termux/Android** environment ke liye designed hai (`/sdcard/C` b
 
 ### Engine internals (v7 highlights)
 - **Lucas Chess exact phase detection:**
-  - *Opening* → Polyglot `book.bin` (gm2001.bin) hash match; fallback `move ≤ 18`
+  - *Opening* → openings.json FEN lookup (3810+ openings) ya Polyglot `book.bin`; fallback `move ≤ 18`
   - *Endgame* → material weight < 1500 pts **ya** total pieces ≤ 6 (Syzygy rule)
   - *Middlegame* → fallback
+- **PGN-loaded games** mein starting position se phase detect hota hai — opening.json FEN match karta hai
+- **Cached openings.json lookup** — O(1) FEN set membership, har move pe fast
 - **Classification formulas:** Lichess win% curve, Lucas thresholds, chess.com-style accuracy formula, RMS game accuracy, piecewise Elo-from-accuracy anchors (300–3000)
 - **Atomic JSON writes** — Termux/Android par app kill hone par bhi data corrupt nahi hoga
 
@@ -284,7 +304,10 @@ Phir browser mein kholo: **`http://localhost:5050`**
 | `/play/hint` | Hint for current position |
 | `/play/result` | Match result → ELO update |
 | `/play/bvb-result` | Bot vs Bot result save |
-| `/play/check-opening` | One-time opening detection (PGN/FEN-loaded games) |
+| `/play/check-opening` | One-time opening detection (PGN/FEN-loaded games, openings.json se) |
+| `/play/leaderboard` | Ranking/leaderboard entries (points sorted) |
+| `/play/leaderboard/history/<key>` | Player match history |
+| `/play/leaderboard/tournament-top` | Tournament bonus points record |
 | `/review/analyze` | SSE streaming full-game review |
 | `/review/history` | Review history CRUD |
 | `/play/imported` | Imported PGN games CRUD |
