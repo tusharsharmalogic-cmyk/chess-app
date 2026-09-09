@@ -455,9 +455,24 @@ const depth = parseInt(document.getElementById('depth-slider').value);
         const rvhData = await rvhRes.json();
         const rvhList = rvhData.history || rvhData || [];
         const reviewMatch = rvhList.find(r => r.pgn === g.pgn);
-        if (reviewMatch && reviewMatch.summary && reviewMatch.summary.phase_accuracies) {
-          const phaseAcc = reviewMatch.summary.phase_accuracies;
-          const accColor = v => v >= 90 ? 'var(--accent2)' : v >= 75 ? 'var(--accent)' : v >= 60 ? '#e0a84a' : 'var(--danger)';
+        if (reviewMatch) {
+          // Overall accuracy
+          if (reviewMatch.white_acc !== null && reviewMatch.white_acc !== undefined &&
+              reviewMatch.black_acc !== null && reviewMatch.black_acc !== undefined) {
+            const wOv = reviewMatch.white_acc;
+            const bOv = reviewMatch.black_acc;
+            const accColor = v => v >= 90 ? 'var(--accent2)' : v >= 75 ? 'var(--accent)' : v >= 60 ? '#e0a84a' : 'var(--danger)';
+            meta.innerHTML += `
+              <div style="border-top:1px solid var(--border);padding-top:4px;margin-top:4px">
+                <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">📊 Overall Accuracy</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div><b>White:</b> <span style="color:${accColor(parseFloat(wOv))};font-weight:700">${wOv}%</span></div>
+                  <div><b>Black:</b> <span style="color:${accColor(parseFloat(bOv))};font-weight:700">${bOv}%</span></div>
+                </div>
+              </div>`;
+          }
+          if (reviewMatch.summary && reviewMatch.summary.phase_accuracies) {
+            const phaseAcc = reviewMatch.summary.phase_accuracies;
           const phaseLabels = { opening: '🌱 Opening', middlegame: '⚔️ Middlegame', endgame: '🏁 Endgame' };
           const phaseOrder = ['opening', 'middlegame', 'endgame'];
           let phaseHtml = '';
@@ -470,6 +485,7 @@ const depth = parseInt(document.getElementById('depth-slider').value);
           });
           if (phaseHtml) {
             meta.innerHTML += `<div style="border-top:1px solid var(--border);padding-top:4px;margin-top:4px">${phaseHtml}</div>`;
+          }
           }
         }
       } catch(e) { /* review history not available */ }
