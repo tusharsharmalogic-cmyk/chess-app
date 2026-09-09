@@ -1,0 +1,76 @@
+/sdcard/C
+├── .gitignore
+├── README.md
+├── c.py
+├── helpers.py
+├── img
+│   └── chesspieces
+│     
+|
+├── index.html
+├── openings.json
+├── play_data
+│   ├── appearance.json
+│   ├── bots.json
+│   ├── current_game_bvb.json
+│   ├── current_game_playbot.json
+│   ├── game_history.json
+│   ├── imported_games.json
+│   ├── play_settings.json
+│   ├── player.json
+│   ├── review_history.json
+│   └── tournament_history.json
+├── project_tree.txt
+├── routes
+│   ├── __init__.py
+│   ├── chesscom_pull.py
+│   ├── imported.py
+│   ├── lichess_pull.py
+│   ├── play.py
+│   ├── puzzles.py
+│   ├── review.py
+│   └── tournament.py
+└── static
+    ├── css
+    │   ├── analysis.css
+    │   ├── base.css
+    │   ├── board.css
+    │   ├── chessboard-1.0.0.min.css
+    │   ├── layout.css
+    │   ├── panels.css
+    │   └── play.css
+    ├── js
+    │   ├── analysis
+    │   │   ├── pgn.js
+    │   │   └── review.js
+    │   ├── core
+    │   │   ├── board.js
+    │   │   └── tabs.js
+    │   ├── lib
+    │   │   ├── chess.min.js
+    │   │   ├── chessboard-1.0.0.min.js
+    │   │   └── jquery.min.js
+    │   ├── play
+    │   │   ├── bot-builder.js
+    │   │   ├── bvb.js
+    │   │   ├── friend.js
+    │   │   ├── lichess.js
+    │   │   ├── play-moves.js
+    │   │   ├── play-setup.js
+    │   │   ├── play-ui.js
+    │   │   ├── puzzles.js
+    │   │   ├── ranking.js
+    │   │   └── tournament.js
+    │   └── shared
+    │       ├── history.js
+    │       ├── personality.js
+    │       ├── play-settings.js
+    │       └── sound.js
+    └── sounds
+        ├── .gitkeep
+        ├── Capture.ogg
+        ├── Check.ogg
+        ├── GameEnd.ogg
+        └── Move.ogg
+
+57 directories, 558 files

@@ -107,6 +107,7 @@ function _tourAutoSaveSettings() {
     s.featThreat    = !!document.getElementById('tour-feat-threat')?.checked;
     s.featSuggestion = !!document.getElementById('tour-feat-suggestion')?.checked;
     s.userStartPgn  = (document.getElementById('tour-user-start-pgn')?.value || '').trim();
+    s.userColor     = document.getElementById('tour-user-color')?.value || 'random';
     s.bvbTimeOn     = !!document.getElementById('tour-bvb-time-on')?.checked;
     s.bvbMinutes    = Math.max(1, Math.min(180, parseInt(document.getElementById('tour-bvb-time-min')?.value) || 5));
     s.bvbDelay      = Math.max(100, parseInt(document.getElementById('tour-bvb-delay')?.value) || 500);
@@ -302,6 +303,14 @@ async function _renderSetup(root) {
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1)">
             <input type="checkbox" id="tour-user-time-on" ${s.userTimeOn ? 'checked' : ''}>
             ⏱ Time control — <input type="number" id="tour-user-time-min" value="${s.userMinutes || 10}" min="1" max="180" style="width:60px;background:var(--bg2,#222);border:1px solid var(--border,#444);border-radius:6px;padding:3px 6px;color:var(--text1)"> min
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1);margin-top:8px">
+            🎨 Your Color:
+            <select id="tour-user-color" style="background:var(--bg2,#222);border:1px solid var(--border,#444);border-radius:6px;padding:4px 8px;color:var(--text1);font-size:12px">
+              <option value="random" ${s.userColor !== 'w' && s.userColor !== 'b' ? 'selected' : ''}>🎲 Random</option>
+              <option value="w" ${s.userColor === 'w' ? 'selected' : ''}>⚪ White</option>
+              <option value="b" ${s.userColor === 'b' ? 'selected' : ''}>⚫ Black</option>
+            </select>
+          </div>
           </label>
           <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11px;color:var(--text1)">
             <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="tour-feat-undo" ${s.featUndo !== false ? 'checked' : ''}>↩ Undo</label>
@@ -396,6 +405,7 @@ async function startTournament() {
     userTimeOn:   !!document.getElementById('tour-user-time-on')?.checked,
     userMinutes:  Math.max(1, Math.min(180, parseInt(document.getElementById('tour-user-time-min')?.value) || 10)),
     userStartPgn: (document.getElementById('tour-user-start-pgn')?.value || '').trim(),
+    userColor:   document.getElementById('tour-user-color')?.value || 'random',
     featUndo:       !!document.getElementById('tour-feat-undo')?.checked,
     featHint:       !!document.getElementById('tour-feat-hint')?.checked,
     featEvalbar:    !!document.getElementById('tour-feat-evalbar')?.checked,
@@ -921,7 +931,10 @@ async function tourPlayUserMatch() {
   const match = cur.match;
 
   const opp = match.p1.type === 'user' ? match.p2 : match.p1;
-  const playerColor = Math.random() < 0.5 ? 'w' : 'b';
+  const userColorSetting = (T.settings && T.settings.userColor) || 'random';
+  const playerColor = userColorSetting === 'random'
+    ? (Math.random() < 0.5 ? 'w' : 'b')
+    : userColorSetting;
 
   // Tournament match settings (setup panel se)
   const US = T.settings || {};
@@ -1311,6 +1324,7 @@ async function startDuoFight() {
     userTimeOn:   !!document.getElementById('tour-user-time-on')?.checked,
     userMinutes:  Math.max(1, Math.min(180, parseInt(document.getElementById('tour-user-time-min')?.value) || 10)),
     userStartPgn: '',
+    userColor:   document.getElementById('tour-user-color')?.value || 'random',
     featUndo:       document.getElementById('tour-feat-undo')?.checked !== false,
     featHint:       document.getElementById('tour-feat-hint')?.checked !== false,
     featEvalbar:    !!document.getElementById('tour-feat-evalbar')?.checked,
@@ -1645,7 +1659,10 @@ async function duoPlayUserMatch() {
   const cur = _duoCur();
   if (!cur || cur.match.who !== 'user') return;
   const opp = cur.match.opponent;
-  const playerColor = Math.random() < 0.5 ? 'w' : 'b';
+  const userColorSetting = (DF.settings && DF.settings.userColor) || 'random';
+  const playerColor = userColorSetting === 'random'
+    ? (Math.random() < 0.5 ? 'w' : 'b')
+    : userColorSetting;
 
   const US = DF.settings || {};
   const userTimeOn = !!US.userTimeOn;
