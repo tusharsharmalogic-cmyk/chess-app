@@ -300,18 +300,18 @@ async function _renderSetup(root) {
 
         <div style="border-top:1px solid var(--border,#333);padding-top:10px">
           <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:8px">♟ YOUR MATCH SETTINGS</div>
-          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1)">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1);flex-wrap:wrap">
             <input type="checkbox" id="tour-user-time-on" ${s.userTimeOn ? 'checked' : ''}>
             ⏱ Time control — <input type="number" id="tour-user-time-min" value="${s.userMinutes || 10}" min="1" max="180" style="width:60px;background:var(--bg2,#222);border:1px solid var(--border,#444);border-radius:6px;padding:3px 6px;color:var(--text1)"> min
-          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1);margin-top:8px">
+          </label>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text1);margin-top:8px;flex-wrap:wrap">
             🎨 Your Color:
-            <select id="tour-user-color" style="background:var(--bg2,#222);border:1px solid var(--border,#444);border-radius:6px;padding:4px 8px;color:var(--text1);font-size:12px">
+            <select id="tour-user-color" style="background:var(--bg2,#222);border:1px solid var(--border,#444);border-radius:6px;padding:4px 8px;color:var(--text1);font-size:12px;max-width:100%;min-width:0">
               <option value="random" ${s.userColor !== 'w' && s.userColor !== 'b' ? 'selected' : ''}>🎲 Random</option>
               <option value="w" ${s.userColor === 'w' ? 'selected' : ''}>⚪ White</option>
               <option value="b" ${s.userColor === 'b' ? 'selected' : ''}>⚫ Black</option>
             </select>
           </div>
-          </label>
           <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11px;color:var(--text1)">
             <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="tour-feat-undo" ${s.featUndo !== false ? 'checked' : ''}>↩ Undo</label>
             <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="tour-feat-hint" ${s.featHint !== false ? 'checked' : ''}>💡 Hint</label>
