@@ -7,3 +7,4 @@ play_data/
 *.corrupt
 *.tmp
 server.log
+server_run.log
