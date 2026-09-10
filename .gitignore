@@ -6,3 +6,4 @@ __pycache__/
 play_data/
 *.corrupt
 *.tmp
+server.log
